@@ -1,7 +1,7 @@
 # InstaMod
 ## An Automoderator-like bot which allows moderators to create a custom rule set based on a user's account history
 
-### InstaMod is capable of automatically assigning users' flair, advaned thread locking, subreddit-wide filtering, creating a subreddit progression system, and more. It can work in conjunction with AutoMod via user flair text, or outright replace it. Below I will describe the different rule types and give an example of how some of them work.
+### InstaMod is capable of automatically assigning users' flair, advanced thread locking, subreddit-wide filtering, creating a subreddit progression system, and more. It can work in conjunction with AutoMod via user flair text, or outright replace it. Below I will describe the different rule types and give an example of how some of them work.
 
 -----
 ### Automatic User Flair:
