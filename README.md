@@ -41,19 +41,19 @@ Here I will describe each element of the provided config file, list the possible
 * **approved_icons** - a comma seperated list () of flair :images: that users with 'FLAIR_ICONS' permission will be able to use.
 
 ### QC_CONFIG: Filtered comment counter
-* **pos_karma** - comments must have a score thats >= this number
-* **pos_words** - comments must contain an amount of words >= this number
-* **pos_karma** and **pos_words** - Comments with values >= both of these numbers count as 1 positive QC
-* **neg_karma** - comments must have a score thats <= this number
-* **neg_words** - comments must contain an amount of words <= this number
-* **neg_karma** and **neg_words** - Comments with values <= both of these numbers count as 1 negative QC
+* **positive karma** - comments must have a score thats >= this number
+* **positive words** - comments must contain an amount of words >= this number
+* **positive karma** and **pos_words** - Comments with values >= both of these numbers count as 1 positive QC
+* **negative karma** - comments must have a score thats <= this number
+* **negative words** - comments must contain an amount of words <= this number
+* **negative karma** and **neg_words** - Comments with values <= both of these numbers count as 1 negative QC
 -----
 ## Options for different rule settings: 
 Each term must be used inbetween '' and typed the same way
 
 ### metric
-* **total_comment_karma, total_post_karma, total_karma** - Self explanatory. These values are for across all subreddits and will ignore the 'target_sub' rule setting. They will not be totaled like other data points.
-* **comment_karma_counter** and **post_karma_counter** - Total comment/post karma by subreddit
- **pos_comment_counter** and **neg_comment_counter** - Count of comments with a score < 0 or > 0 by subreddit
-* **pos_post_counter** and **neg_post_counter** - Count of posts with a score < 0 or > 0 by subreddit
-* **pos_QC_counter**, **neg_QC_counter**, **net_QC_counter** - The number of QC by subreddit. net_QC_counter consists of the negative QC subtracted from the positive QC by subreddit
+* **total comment karma**, **total post karma**, **total karma** - Self explanatory. These values are for across all subreddits and will ignore the 'target_sub' rule setting. They will not be totaled like other data points.
+* **comment karma** and **post karma** - Total comment/post karma by subreddit
+ **positive comment** and **negative comment** - Count of comments with a score < 0 or > 0 by subreddit
+* **positive post** and **negative post** - Count of posts with a score < 0 or > 0 by subreddit
+* **positive QC**, **negative QC**, **net QC** - The number of QC by subreddit. net_QC_counter consists of the negative QC subtracted from the positive QC by subreddit
