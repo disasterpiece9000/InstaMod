@@ -1,6 +1,6 @@
 -----
 # Configuration File Documentation
-Here I will describe each element of the provided config file, list the possible options for each setting, and provide some example cases
+Here I will describe each element of the provided config file, list the possible options for each setting, and provide some example cases. If you want to jump to the interesting bits, please see the "Defining a rule" section. But it mighttttt not make a ton of sense
 
 ### SUB_CONFIG: Primary settings for toggling on/off features, as well as other meta options
 * **name** - Name of the subreddit InstaMod is running on
