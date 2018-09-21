@@ -59,19 +59,19 @@ Each term must be used inbetween '' and typed the same way
 ## Defining a rule
 Wow you made it this far. I'm honestly impressed. Lucky for you, this is where it gets juicy. Let's take a look at a sample rule and see if we can make sense of it:
 
-'tier1' : {'metric' : 'positive comments', 
+    'tier1' : {'metric' : 'positive comments', 
 
-				'target_subs' : ('A_SUBS'), 
+		'target_subs' : ('A_SUBS'), 
         
-				'comparison' : 'LESS_THAN_EQUAL_TO', 
+		'comparison' : 'LESS_THAN_EQUAL_TO', 
         
-				'value' : 20, 
+		'value' : 20, 
         
-				'flair_text' : 'New Arrival', 
+		'flair_text' : 'New Arrival', 
         
-				'flair_css' : None, 
+		'flair_css' : None, 
         
-				'permissions' : None},
+		'permissions' : None},
         
 I speek nerd so allow me to translate: If a user has 0 - 20 positive comments in subreddits from A_SUBS, then they get the tag "New Arrival" in their flair text. See that wasn't so hard right?! The configuration file comes with a few examples of the different types of rules and their "translations".
 
@@ -80,19 +80,19 @@ Did you catch that? I said "different types of rules"...did you really think I w
 ### PROGRESS_CONFIG:
 This is the same type that was used in the example above. A user can only be assigned 1 of the tags in this set of rules, so that they represent different stages of subreddit progression. This is also the onyl rule set that can grant users permissions. For instance, here is the next example in the set of example progression tags:
 
-'tier2' : {'metric' : 'positive comments', 
+    'tier2' : {'metric' : 'positive comments', 
 
-				'target_subs' : ('A_SUBS'), 
+		'target_subs' : ('A_SUBS'), 
         
-				'comparison' : 'LESS_THAN_EQUAL_TO', 
+		'comparison' : 'LESS_THAN_EQUAL_TO', 
         
-				'value' : 50, 
+		'value' : 50, 
         
-				'flair_text' : 'Been Here', 
+		'flair_text' : 'Been Here', 
         
-				'flair_css' : None, 
+		'flair_css' : None, 
         
-				'permissions' : None},
+		'permissions' : None},
         
 This one reads almost the same. The only thing that's changed is the value option. Since only one of these tiers can be selected, the rule reads as: If a user has 21 - 50 positive comments in subreddits from A_SUBS, then they get the tag "Been Here" in their flair text
 
@@ -104,37 +104,37 @@ These tags are applied for each subreddit (individually) in the target_subs sett
 
 Since you've stuck with me this far, here are 2 examples:
 
-'subtag1' : {'metric' : 'net QC', 
+    'subtag1' : {'metric' : 'net QC', 
 
-				'target_subs' : ('A_SUBS'), 
+		'target_subs' : ('A_SUBS'), 
         
-				'sort' : 'MOST_COMMON',
+		'sort' : 'MOST_COMMON',
         
-				'tag_cap' : 3, 
+		'tag_cap' : 3, 
         
-				'comparison' : 'GREATER_THAN_EQUAL_TO', 
+		'comparison' : 'GREATER_THAN_EQUAL_TO', 
         
-				'value' : 15, 
+		'value' : 15, 
         
-				'pre_text' : 'r/', 
+		'pre_text' : 'r/', 
         
-				'post_text' : ''},
+		'post_text' : ''},
 				
 	'subtag2' : {'metric' : 'net QC', 
   
-				'target_subs' : ('A_SUBS'), 
+		'target_subs' : ('A_SUBS'), 
         
-				'sort' : 'LEAST_COMMON', 
+		'sort' : 'LEAST_COMMON', 
         
-				'tag_cap' : 3, 
+		'tag_cap' : 3, 
         
-				'comparison' : 'LESS_THAN_EQUAL_TO', 
+		'comparison' : 'LESS_THAN_EQUAL_TO', 
         
-				'value' : -10, 
+		'value' : -10, 
         
-				'pre_text' : 'Trolls r/', 
+		'pre_text' : 'Trolls r/', 
         
-				'post_text' : ''}
+		'post_text' : ''}
         
       
 The first rule tags users with 15 or higher net QC with the text "r/SomeSub", while the second rule tags users with -10 or less net QC with the text "Trolls r/SomeSub". Where "SomeSub" is the given abbreviation for a subreddit.
@@ -147,17 +147,17 @@ InstaMod will scan for posts with specific post flair and filter the comments un
 
 Ok now that that's out of the way, more examples! Here is a thread lock that filters out the same users who would have the "New Arrival" tag that we previously defined:
 
-'threadlock1' : {'metric' : 'positive comments', 
+    'threadlock1' : {'metric' : 'positive comments', 
 
-					'target_subs' : ('CM'), 
+			'target_subs' : ('CM'), 
           
-					'comparison' : 'LESS_THAN_EQUAL_TO', 
+			'comparison' : 'LESS_THAN_EQUAL_TO', 
           
-					'value' : 20, 
+			'value' : 20, 
           
-					'flair_ID' : 'lvl 1 Lock', 
+			'flair_ID' : 'lvl 1 Lock', 
           
-					'action' : 'REMOVE'},
+			'action' : 'REMOVE'},
 
 Translation: If a user has 20 or less positive comments, remove only their comments under this post
 -----
