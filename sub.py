@@ -31,6 +31,7 @@ class Subreddit:
 		sub.progression_config = sub_config.PROGRESS_CONFIG
 		sub.tag_config = sub_config.ETCTAG_CONFIG
 		sub.subtag_config = sub_config.SUBTAG_CONFIG
+		sub.ratelimit_config = sub_config.RATELIMIT_CONFIG
 		sub.threadlock_config = sub_config.THREADLOCK_CONFIG
 		sub.sublock_config = sub_config.SUBLOCK_CONFIG
 		
@@ -45,6 +46,7 @@ class Subreddit:
 		sub.expired_users = []
 		sub.users_and_flair = {}
 		sub.flair_img = []
+		sub.lock_mode = None
 		
 		sub.mods = sub.main_config['mods']
 		sub.sub_name = sub_name
@@ -152,9 +154,9 @@ class Subreddit:
 		sub.flair_img.append(username)
 		print (username + ' added to flair image permission list')
 		
-	def makeUser(sub, user, username, date_created, analysis_time, total_comment_karma, total_post_karma, total_karma, comment_karma_counter, post_karma_counter, pos_comment_counter, neg_comment_counter, pos_post_counter, neg_post_counter, pos_QC_counter, neg_QC_counter):
+	def makeUser(sub, user, username, date_created, analysis_time, total_comment_karma, total_post_karma, total_karma, comment_karma_counter, post_karma_counter, pos_comment_counter, neg_comment_counter, pos_post_counter, neg_post_counter, pos_QC_counter, neg_QC_counter, comment_rate, post_rate):
 		sub.current_users.append(user)
-		return User(sub, username, date_created, analysis_time, total_comment_karma, total_post_karma, total_karma, comment_karma_counter, post_karma_counter, pos_comment_counter, neg_comment_counter, pos_post_counter, neg_post_counter, pos_QC_counter, neg_QC_counter)
+		return User(sub, username, date_created, analysis_time, total_comment_karma, total_post_karma, total_karma, comment_karma_counter, post_karma_counter, pos_comment_counter, neg_comment_counter, pos_post_counter, neg_post_counter, pos_QC_counter, neg_QC_counter, comment_rate, post_rate)
 	
 	def makeDict(sub, info_str):
 		info_counter = Counter()
@@ -181,7 +183,10 @@ class Subreddit:
 		pos_QC_counter = sub.makeDict(info_dict['pos_QC_counter'])
 		neg_QC_counter = sub.makeDict(info_dict['neg_QC_counter'])
 		
-		return User(sub, username, date_created, analysis_time, total_comment_karma, total_post_karma, total_karma, comment_karma_counter, post_karma_counter, pos_comment_counter, neg_comment_counter, pos_post_counter, neg_post_counter, pos_QC_counter, neg_QC_counter)
+		comment_rate = info_dict['comment_rate'].split()
+		post_rate = info_dict['post_rate'].split()
+		
+		return User(sub, username, date_created, analysis_time, total_comment_karma, total_post_karma, total_karma, comment_karma_counter, post_karma_counter, pos_comment_counter, neg_comment_counter, pos_post_counter, neg_post_counter, pos_QC_counter, neg_QC_counter, comment_rate, post_rate)
 		
 		
 	def checkUser(sub, user):

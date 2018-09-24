@@ -8,6 +8,7 @@ SUB_CONFIG = {
 	'sub_progression' : True,
 	'etc_tags' : False,
 	'sub_tags' : True,
+	'ratelimit' : False,
 	'tag_expiration' : 7,
 	'accnt_age' : 6,
 	'update_interval' : 'INSTANT',
@@ -90,6 +91,24 @@ SUBTAG_CONFIG = {
 				'pre_text' : 'Trolls r/', 
 				'post_text' : ''}
 }
+
+RATELIMIT_CONFIG = {
+	'COMMENTS' : {'metric' : 'net QC',
+					'target_subs' : ('CM'),
+					'comparison' : 'LESS_THAN_EQUAL_TO',
+					'value' : 10,
+					'max' : 5,
+					'interval' : 24},
+	
+	'SUBMISSIONS' : {'metric' : 'net QC',
+					'target_subs' : ('CM'),
+					'comparison' : 'LESS_THAN_EQUAL_TO',
+					'value' : 10,
+					'max' : 1,
+					'interval' : 24},
+					
+	'comment_remove_message' : ('Automatic comment removal notice', 'Your account has exceeded the allowed number of comments in this subreddit. If you have any questions, comments, orl concerns, please message the moderators. This is an automated message.')
+}					
 
 # Advanced Thread Locking
 # Unique characteristics:

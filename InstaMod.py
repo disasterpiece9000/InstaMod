@@ -23,6 +23,13 @@ from user import User
 #import CryptoTechnology/config.py as CTConfig
 from CryptoMarkets import config as CMConfig
 
+
+# List of subs for parsing folders
+master_list = {
+	#'CryptoTechnology' : CTConfig
+	'CryptoMarkets' : CMConfig
+}
+
 # Save current time
 current_time = datetime.now()
 
@@ -31,12 +38,6 @@ reddit = praw.Reddit('InstaMod')
 
 # Initiate TinyDB Querry
 find_stuff = Query()
-
-# List of subs for parsing folders
-master_list = {
-	#'CryptoTechnology' : CTConfig
-	'CryptoMarkets' : CMConfig
-}
 
 # Returns Subreddit Object
 def setSubs():
@@ -71,10 +72,9 @@ def scrapeSub(parent_sub, cmnt_limit, post_limit):
 		user = comment.author
 		username = str(user)
 
-		if parent_sub.checkUser(user) == True:
+		if parent_sub.checkUser(user) == True and user not in insta_flair:
 			#print (dir(parent_sub.sub_obj.flair(user)))
 			flair = next(parent_sub.sub_obj.flair(user))['flair_text']
-			print (flair)
 			if flair != '' and flair != None:
 				parent_sub.addExpired(user)
 			else:
@@ -87,7 +87,7 @@ def scrapeSub(parent_sub, cmnt_limit, post_limit):
 		user = post.author
 		username = str(user)
 
-		if parent_sub.checkUser(user) == True:
+		if parent_sub.checkUser(user) == True and user not in insta_flair:
 			flair = list(parent_sub.sub_obj.flair(user))[0]
 			if flair != '' and flair != None:
 				parent_sub.addExpired(user)
@@ -101,6 +101,8 @@ def scrapeSub(parent_sub, cmnt_limit, post_limit):
 				if lock_status != None:
 					locked_threads[post.fullname] = lock_status
 					print ('Post: ' + post.fullname + ' was added to locked_threads\nLock Status: ' + lock_status)
+	
+	current_time = datetime.now()
 	
 	# Instantly flair users without any flair
 	analyzeUsers(parent_sub, insta_flair)
@@ -122,13 +124,28 @@ def scrapeSub(parent_sub, cmnt_limit, post_limit):
 			username = str(user)
 			post = comment.submission
 			submis_id = post.fullname
+			user_info = parent_sub.getUserInfo(username)
 
 			# TODO: Handel sublock
+			if parent_sub.main_config['sub_lock'] == True:
+				user_locked = handelSubLock(parent_sub, user_info)
+				
+				if user_locked != False:
+					lock_type = parent_sub.sublock_config[user_locked]
+					action = lock_type['action']
+					
+					if action == 'REMOVE':
+						message_info = parent_sub.threadlock_config['remove_message']
+						if message_info != None:
+							user.message(message_info[0], ("\n\nSubreddit: " + parent_sub.sub_name + "\n\nPost: " + post.title + "\n\nLock Type: " + lock_type['lock_ID'] + "\n\nComment: " + comment.body + "\n\n" + message_info[1]))
+							comment.mod.remove()
+							print ('Comment removed and user notified')
+					elif action == 'SPAM':
+						comment.mod.remove(spam=True)
 				
 			# Check if comment is in a locked thread
 			if submis_id in locked_threads and parent_sub.checkUser(user):
 				lock_status = locked_threads[submis_id]
-				user_info = parent_sub.getUserInfo(username)
 				
 				if handelThreadLock(parent_sub, lock_status, user_info):
 					lock_type = parent_sub.threadlock_config[lock_status]
@@ -137,12 +154,11 @@ def scrapeSub(parent_sub, cmnt_limit, post_limit):
 					if action == 'REMOVE':
 						message_info = parent_sub.threadlock_config['remove_message']
 						if message_info != None:
-							user.message(message_info[0], ("\n\nSubreddit: " + parent_sub.sub_name + "\n\nPost: " + post.title + "\n\nLock Type: " + lock_status + "\n\nComment: " + comment.body + "\n\n" + message_info[1]))
+							user.message(message_info[0], ("\n\nSubreddit: " + parent_sub.sub_name + "\n\nPost: " + post.title + "\n\nLock Type: " + lock_type['flair_ID'] + "\n\nComment: " + comment.body + "\n\n" + message_info[1]))
 							comment.mod.remove()
 							print ('Comment removed and user notified')
 					elif action == 'SPAM':
-						comment.mod.remove(spam=True)
-							
+						comment.mod.remove(spam=True)						
 
 # Analyze a user's comments and posts and extract data from them
 def analyzeHistory(parent_sub, user):
@@ -162,6 +178,9 @@ def analyzeHistory(parent_sub, user):
 	neg_post_counter = Counter()
 	pos_QC_counter = Counter()
 	neg_QC_counter = Counter()
+	
+	comment_rate = []
+	post_rate = []
 	
 	# Parse comments
 	for comment in user.comments.new(limit = None):
@@ -192,6 +211,14 @@ def analyzeHistory(parent_sub, user):
 				elif word_count <= parent_sub.QC_config['neg_words']:
 					neg_QC_counter[abbrev] += 1
 					
+		if parent_sub.main_config['ratelimit'] == True and parent_sub.ratelimit_config['COMMENTS']['metric'] != None and sub_name == parent_sub.sub_name:
+			config = parent_sub.ratelimit_config
+			max_comments = config['max']
+			interval = config['interval']
+			tdelta = current_time - comment.created
+			if tdelta.hours <= interval:
+				comment_rate.append(comment.id)
+					
 	# Parse posts
 	for post in user.submissions.new(limit = None):
 		post_sub = post.subreddit
@@ -212,7 +239,15 @@ def analyzeHistory(parent_sub, user):
 			elif post_score < 0:
 				neg_comment_counter[abbrev] += 1
 				
-	return parent_sub.makeUser(user, username, date_created, analysis_time, total_comment_karma, total_post_karma, total_karma, comment_karma_counter, post_karma_counter, pos_comment_counter, neg_comment_counter, pos_post_counter, neg_post_counter, pos_QC_counter, neg_QC_counter)
+		if parent_sub.main_config['ratelimit'] == True and parent_sub.ratelimit_config['SUBMISSIONS']['metric'] != None :
+			config = parent_sub.ratelimit_config
+			max_posts = config['max']
+			interval = config['interval']
+			tdelta = current_time - comment.created
+			if tdelta.hours <= interval:
+				post_rate.append(post.id)
+				
+	return parent_sub.makeUser(user, username, date_created, analysis_time, total_comment_karma, total_post_karma, total_karma, comment_karma_counter, post_karma_counter, pos_comment_counter, neg_comment_counter, pos_post_counter, neg_post_counter, pos_QC_counter, neg_QC_counter, comment_rate, post_rate)
 	
 
 # Get users' history and process data based on info
@@ -262,13 +297,13 @@ def analyzeUsers(parent_sub, user_list):
 							parent_sub.appendFlair(username, flairText + ' day old', None)
 						else:
 							parent_sub.appendFlair(username, flairText + ' days old', None)
-					elif tdelta.months < 6:
+					else:
 						months = tdelta.months
 						flairText = str(months)
 						if months == 1:
 							parent_sub.appendFlair(user, flairText + ' month old', None)
-					else:
-						parent_sub.appendFlair(user, flairText + ' months old', None)
+						else:
+							parent_sub.appendFlair(user, flairText + ' months old', None)
 		"""		
 		if parent_sub.main_config['etc_tags'] == True:
 			for tag, config in parent_sub.tag_config:
@@ -277,6 +312,36 @@ def analyzeUsers(parent_sub, user_list):
 					flair_text = config[1]
 					flair_css = config[2]
 		"""
+		
+		if parent_sub.main_config['ratelimit'] == True:
+			if parent_sub.ratelimit_config['COMMENTS']['metric'] != None:
+				config = parent_sub.ratelimit_config['COMMENTS']
+				if checkInfoTag(parent_sub, user_info, config):
+					comment_hist = user_info.comment_rate
+					max = config['max']
+					while len(comment_hist) > max:
+						comment = reddit.comment(id=comment_hist.pop[0])
+						author = comment.author
+						username = str(author)
+						post = comment.submission
+						
+						message_info = config['comment_remove_message']
+						author.message(message_info[0], ("\n\nSubreddit: " + parent_sub.sub_name + "\n\nPost: " + post.title + "\n\nComment Rate Limit: Over " + str(max) + ' comments in under ' + str(config['interval']) + ' hours' + "\n\nComment: " + comment.body + "\n\n" + message_info[1]))
+						comment.mod.remove()
+			if parent_sub.ratelimit_config['SUBMISSIONS']['metric'] != None:
+				config = parent_sub.ratelimit_config['SUBMISSIONS']
+				if checkInfoTag(parent_sub, user_info, config):
+					post_hist = user_info.post_rate
+					max = config['max']
+					while len(post_hist) > max:
+						post = reddit.submission(id=post_hist.pop[0])
+						author = comment.author
+						username = str(author)
+						
+						message_info = config['comment_remove_message']
+						author.message(message_info[0], ("\n\nSubreddit: " + parent_sub.sub_name + "\n\nPost: " + post.title + "\n\nComment Rate Limit: Over " + str(max) + ' comments in under ' + str(config['interval']) + ' hours' + "\n\n" + message_info[1]))
+						comment.mod.remove()	
+					
 	parent_sub.flairUsers()
 	
 def readPMs(parent_sub):
@@ -288,7 +353,7 @@ def readPMs(parent_sub):
 			print('Message accepted: ' + message.body)
 			message_words = message.body.split()
 			
-			if len(message_text) != 2:
+			if len(message_words) != 2:
 				message.reply('More or less than 2 arguments were found in the body of the message. Please try again with the proper syntax. If you believe this is an error, please contact /u/shimmyjimmy97')
 				message.mark_read()
 				print ('Message resolved without action: Invalid number of arguments')
@@ -507,5 +572,7 @@ if command == 'auto':
 		for sub in sub_list:
 			print('Scraping subreddit: ' + sub.sub_name)
 			readPMs(sub)
-			scrapeSub(sub, 15, 10)
+			scrapeSub(sub, 300, 100)
 			print('Finished subreddit: ' + sub.sub_name)
+		print('Sleeping for 1 min')
+		time.sleep(60)
