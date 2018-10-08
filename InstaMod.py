@@ -43,8 +43,8 @@ find_stuff = Query()
 def setSubs():
 	sub_list = []
 	
-	for sub in master_list:
-		sub_list.append(Subreddit(sub, master_list[sub]))
+	for sub, file in master_list.items():
+		sub_list.append(Subreddit(sub, file))
 	return sub_list
 
 # Ensures user is accessible to the bot
@@ -72,14 +72,21 @@ def scrapeSub(parent_sub, cmnt_limit, post_limit):
 		user = comment.author
 		username = str(user)
 
-		if parent_sub.checkUser(user) == True and user not in insta_flair:
-			#print (dir(parent_sub.sub_obj.flair(user)))
-			flair = next(parent_sub.sub_obj.flair(user))['flair_text']
-			if flair != '' and flair != None:
-				parent_sub.addExpired(user)
-			else:
-				insta_flair.append(user)
-				print ('User: ' + username + ' added to instant flair list')
+		if parent_sub.checkUser(user) == True:
+			if user not in parent_sub.comment_activity:
+				parent_sub.comment_activity[username] = []
+				
+			comm_act = parent_sub.comment_activity[username]
+			if comment.id not in comm_act:
+				comm_act.append(comment.id)
+				
+			if user not in insta_flair:
+				flair = next(parent_sub.sub_obj.flair(user))['flair_text']
+				if flair != '' and flair != None:
+					parent_sub.addExpired(user)
+				else:
+					insta_flair.append(user)
+					print ('User: ' + username + ' added to instant flair list')
 			
 	print ('Scraping submissions\n')
 	posts = sub.new(limit = post_limit)
@@ -87,12 +94,20 @@ def scrapeSub(parent_sub, cmnt_limit, post_limit):
 		user = post.author
 		username = str(user)
 
-		if parent_sub.checkUser(user) == True and user not in insta_flair:
-			flair = list(parent_sub.sub_obj.flair(user))[0]
-			if flair != '' and flair != None:
-				parent_sub.addExpired(user)
-			else:
-				insta_flair.append(user)
+		if parent_sub.checkUser(user) == True:
+			if user not in parent_sub.post_activity:
+				parent_sub.post_activity[username] = []
+				
+			post_act = parent_sub.post_activity[username]
+			if post.id not in post_act:
+				post_act.append(post.id)
+			if user not in insta_flair:
+				flair = list(parent_sub.sub_obj.flair(user))[0]
+				if flair != '' and flair != None:
+					parent_sub.addExpired(user)
+				else:
+					insta_flair.append(user)
+					print ('User: ' + username + ' added to instant flair list')
 		
 		# Check if post has flair for thread locking and save post ID
 		if parent_sub.main_config['thread_lock'] == True:
@@ -119,12 +134,17 @@ def scrapeSub(parent_sub, cmnt_limit, post_limit):
 	
 	if parent_sub.main_config['thread_lock'] == True or parent_sub.main_config['sub_lock'] == True:
 		# Recheck comments for users who should have comments auto deleted or for comments in locked threads
-		for comment in sub.comments(limit = cmnt_limit):
+		comments = sub.comments(limit = cmnt_limit)
+		for comment in comments:
 			user = comment.author
 			username = str(user)
 			post = comment.submission
 			submis_id = post.fullname
 			user_info = parent_sub.getUserInfo(username)
+			
+			if user_info == None:
+				print('User not found in database, skipping comment')
+				continue
 
 			# TODO: Handel sublock
 			if parent_sub.main_config['sub_lock'] == True:
@@ -158,7 +178,41 @@ def scrapeSub(parent_sub, cmnt_limit, post_limit):
 							comment.mod.remove()
 							print ('Comment removed and user notified')
 					elif action == 'SPAM':
-						comment.mod.remove(spam=True)						
+						comment.mod.remove(spam=True)
+						
+	if parent_sub.main_config['ratelimit'] == True:
+		config = parent_sub.ratelimit_config
+		
+		if config['COMMENTS'] != None:
+			for username, comments in parent_sub.comment_activity.items():
+				if checkUserTag(parent_sub, parent_sub.getUserInfo(username), config['COMMENTS']):
+					while len(comments) > config['COMMENTS']['max']:
+						remove_comm = reddit.comment(comments.pop[0])
+						remove_comm.reply(config['comment_remove_message'])
+						remove_comm.mod.remove()
+			
+			comm_interval = config['COMMENTS']['interval']
+			last_wipe = parent_sub.comm_age
+			tdelta = current_time - last_wipe
+			if tdelta.hours > comm_interval:
+				parent_sub.wipeCommAct()
+				
+			updateCommAct()
+						
+		if config['SUBMISSIONS'] != None:
+			for username, posts in parent_sub.post_activity.items():
+				if checkUserTag(parent_sub, parent_sub.getUserInfo(username), config['SUBMISSIONS']):
+					while len(posts) > config['SUBMISSIONS']['max']:
+						remove_post = reddit.submission(posts.pop[0])
+						remove_post.mod.remove()
+						
+			post_interval = config['SUBMISSIONS']['interval']
+			last_wipe = parent_sub.post_age
+			tdelta = current_time - last_wipe
+			if tdelta.hours > post_interval:
+				parent_sub.wipePostAct()
+				
+			updatePostAct()
 
 # Analyze a user's comments and posts and extract data from them
 def analyzeHistory(parent_sub, user):

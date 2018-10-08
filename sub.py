@@ -22,10 +22,18 @@ def setUser(username):
 		return reddit.redditor(username)
 	except (prawcore.exceptions.NotFound, AttributeError):
 		return None
+		
+def json_serial(obj):
+    if isinstance(obj, (datetime, date)):
+        return obj.isoformat()
+    raise TypeError ("Type %s not serializable" % type(obj))
 
 # Subreddit objectclass Subreddit:
 class Subreddit:
 	def __init__(sub, sub_name, sub_config):
+		#save current time
+		current_time = datetime.now()
+		
 		sub.main_config = sub_config.SUB_CONFIG
 		sub.QC_config = sub_config.QC_CONFIG
 		sub.progression_config = sub_config.PROGRESS_CONFIG
@@ -47,6 +55,8 @@ class Subreddit:
 		sub.users_and_flair = {}
 		sub.flair_img = []
 		sub.lock_mode = None
+		sub.post_activity = {}
+		sub.comment_activity = {}
 		
 		sub.mods = sub.main_config['mods']
 		sub.sub_name = sub_name
@@ -96,6 +106,22 @@ class Subreddit:
 			if user != None:
 				sub.flair_img.append(user)
 		print ('All users read from flair image permission list\n')
+		
+		post_act = TinyDB(sub_name + '/post_activity.json')
+		sub.post_age = post_act['created']
+		for user in post_act:
+			username = user['username']
+			posts = user['posts']
+			sub.post_activity[username] = posts
+		print ('All users read from post activity\n')
+		
+		comm_act = TinyDB(sub_name + '/comment_activity.json')
+		sub.comm_age = comm_act['created']
+		for user in comm_act:
+			username = user['username']
+			comments = user['comments']
+			sub.comment_activity[username] = comments
+		print ('All users read from post activity\n')
 		
 	
 	# Flair all users in users_and_flair
@@ -167,7 +193,10 @@ class Subreddit:
 	
 	def getUserInfo(sub, username):
 		userDB = TinyDB(sub.sub_name + '/userInfo.json')
-		info_dict = userDB.search(find_stuff['username'] == username)[0]
+		try:
+			info_dict = userDB.search(find_stuff['username'] == username)[0]
+		except IndexError:
+			return None
 		
 		date_created = info_dict['date_created']
 		analysis_time = info_dict['analysis_time']
@@ -204,10 +233,37 @@ class Subreddit:
 		print(str(len(expiredDB)))
 		expiredDB.purge()
 		print('Expired user database was purged')
-		print(str(len(expiredDB)))
-		print(str(len(sub.expired_users)))
 		sub.expired_users.clear()
-		print('Epired user list was cleared')
-		print(str(len(sub.expired_users)))
+	
+	def wipeCommAct(sub):
+		comm_act = TinyDB(sub_name + '/comment_activity.json')
+		comm_act.purge()
+		comm_act.insert({'created' : json_serial(datetime.now())})
+		sub.comment_activity.clear()
+		print('Comment Activity list was purged')
 		
+	def wipePostAct(sub):
+		post_act = TinyDB(sub_name + '/post_activity.json')
+		post_act.purge()
+		post_act.insert({'created' : json_serial(datetime.now())})
+		sub.post_activity.clear()
+		print('Post Activity list was purged')
+		
+	def updatePostAct(sub):
+		post_act = TinyDB(sub_name + '/post_activity.json')
+		hold_created = post_act['created']
+		post_act.purge()
+		post_act.insert({'created' : hold_created})
+		for username, activity in sub.post_activity.items():
+			post_act.insert({'username' : username, 'posts' : activity})
+		print('Comment Activity updated')
+			
+	def updateCommAct(sub):
+		comm_act = TinyDB(sub_name + '/comment_activity.json')
+		hold_created = comm_act['created']
+		comm_act.purge()
+		comm_act.insert({'created' : hold_created})
+		for username, activity in sub.comment_activity.items():
+			comm_act.insert({'username' : username, 'comments' : activity})
+		print('Post Activity updated')
 		
