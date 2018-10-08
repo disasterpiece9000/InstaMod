@@ -6,7 +6,7 @@ Here I will describe each element of the provided config file, list the possible
 * **name** - Name of the subreddit InstaMod is running on
 * **abbrev** - Abbreviation of the subreddit
 * **mods** - Comma seperated list () of usernames. Each username shold be encased in ''
-* **thread_lock** to **ub_tags** - Accepts True/False values to turn on/off the feature
+* **thread_lock** to **sub_tags** - Accepts True/False values to turn on/off the feature
 * **tag_expiration** - Number of days until a user's flair is reassessed 
 * **accnt_age** - Represents number of months. If an account is younger than this, then they will get a tag for it. Change it to None to disable
 * **update_interval** - set to 'INSTANT' for users to be analyzed as they are seen, or set it to any number <= 500 to flair users in batches. Once the stored lis of users is >= this number, they will be flaired
