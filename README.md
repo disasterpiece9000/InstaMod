@@ -26,3 +26,5 @@ In case that wasn't enough, I have an Ace up my sleeve. Tags in this section all
 ### Advanced Thread/Sub Locking:
 Traditional thread locking is all-or-nothing and AutoModerator can only filter users' comments based on flair text and account age. With InstaMod, a post's comment section can be filtered through a rule. If a user doesn't meet the requirements, then their comment can either be removed or marked spam. There is also a way to automatically notify the user of their comment's deletion. Moderators simply have to assign a post a specific flair for it to be locked. This type of rule can also be applied to the subreddit as a whole, and is activated/deactivated via PM.
 
+### Custom Rate-limiting:
+Reddit has a built in rate-limit system to prevent spam, but with InstaMod this can be expanded and customized to ensure that new users in your subreddit cannot spam comments or submissions. Moderators can design the bot to prevent users with less than 20 positive comments from submitting more than 5 posts in a day, or it could prevent users with more negative than positive comments from commenting more than once a day. The options are endless!
