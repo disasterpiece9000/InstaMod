@@ -7,6 +7,7 @@ import dateutil.parser
 from tinydb import TinyDB, Query
 from collections import Counter
 from user import User
+from ast import literal_eval
 
 #save current time
 current_time = datetime.now()
@@ -30,22 +31,23 @@ def json_serial(obj):
 
 # Subreddit objectclass Subreddit:
 class Subreddit:
-	def __init__(sub, sub_name, sub_config):
+	def __init__(sub, sub_name):
 		#save current time
 		current_time = datetime.now()
 		
-		sub.main_config = sub_config.SUB_CONFIG
-		sub.QC_config = sub_config.QC_CONFIG
-		sub.progression_config = sub_config.PROGRESS_CONFIG
-		sub.tag_config = sub_config.ETCTAG_CONFIG
-		sub.subtag_config = sub_config.SUBTAG_CONFIG
-		sub.ratelimit_config = sub_config.RATELIMIT_CONFIG
-		sub.threadlock_config = sub_config.THREADLOCK_CONFIG
-		sub.sublock_config = sub_config.SUBLOCK_CONFIG
+		str_config = reddit.subreddit(sub_name).wiki['InstaModSettings'].content_md
+		sub_config = literal_eval(str_config)
 		
-		sub.A_subs = sub_config.A_SUBS
-		sub.B_subs = sub_config.B_SUBS
-		sub.all_subs = sub_config.B_SUBS
+		sub.main_config = sub_config['SUB_CONFIG']
+		sub.QC_config = sub_config['QC_CONFIG']
+		sub.progression_config = sub_config['PROGRESS_CONFIG']
+		sub.subtag_config = sub_config['SUBTAG_CONFIG']
+		sub.threadlock_config = sub_config['THREADLOCK_CONFIG']
+		sub.sublock_config = sub_config['SUBLOCK_CONFIG']
+		
+		sub.A_subs = sub_config['A_SUBS']
+		sub.B_subs = sub_config['B_SUBS']
+		sub.all_subs = sub_config['B_SUBS']
 		sub.all_subs.update(sub.A_subs)
 		
 		sub.whitelist = []
@@ -55,12 +57,10 @@ class Subreddit:
 		sub.users_and_flair = {}
 		sub.flair_img = []
 		sub.lock_mode = None
-		sub.post_activity = {}
-		sub.comment_activity = {}
 		
 		sub.mods = sub.main_config['mods']
 		sub.sub_name = sub_name
-		sub.sub_abbrev = sub_config.SUB_CONFIG['abbrev']
+		sub.sub_abbrev = sub_config['SUB_CONFIG']['abbrev']
 		sub.sub_obj = reddit.subreddit(sub_name)
 		
 		whitelistDB = TinyDB(sub_name + '/whitelist.json')
@@ -107,23 +107,6 @@ class Subreddit:
 				sub.flair_img.append(user)
 		print ('All users read from flair image permission list\n')
 		
-		post_act = TinyDB(sub_name + '/post_activity.json')
-		sub.post_age = post_act['created']
-		for user in post_act:
-			username = user['username']
-			posts = user['posts']
-			sub.post_activity[username] = posts
-		print ('All users read from post activity\n')
-		
-		comm_act = TinyDB(sub_name + '/comment_activity.json')
-		sub.comm_age = comm_act['created']
-		for user in comm_act:
-			username = user['username']
-			comments = user['comments']
-			sub.comment_activity[username] = comments
-		print ('All users read from post activity\n')
-		
-	
 	# Flair all users in users_and_flair
 	def flairUsers(sub):
 		sub_obj = sub.sub_obj
@@ -166,36 +149,41 @@ class Subreddit:
 		graylistDB.insert({'username' : username})
 		sub.graylist.append(username)
 		print (username + ' added to graylist')
-		
+	
+	# Add a user to the expired list and database
 	def addExpired(sub, user):
 		username = str(user)
 		expiredDB = TinyDB(sub.sub_name + '/expired.json')
 		expiredDB.insert({'username' : username})
 		sub.expired_users.append(user)
-		print (username + ' added to expired list')
-		
+		print ('User: ' + username + ' added to expired list')
+	
+	# Add an image flair option to the image flair list
 	def addImgFlair(sub, username):
 		flair_imgDB = TinyDB(sub.sub_name + '/flair_img.json')
 		flair_imgDB.insert({'username' : username})
 		sub.flair_img.append(username)
 		print (username + ' added to flair image permission list')
-		
-	def makeUser(sub, user, username, date_created, analysis_time, total_comment_karma, total_post_karma, total_karma, comment_karma_counter, post_karma_counter, pos_comment_counter, neg_comment_counter, pos_post_counter, neg_post_counter, pos_QC_counter, neg_QC_counter, comment_rate, post_rate):
-		sub.current_users.append(user)
-		return User(sub, username, date_created, analysis_time, total_comment_karma, total_post_karma, total_karma, comment_karma_counter, post_karma_counter, pos_comment_counter, neg_comment_counter, pos_post_counter, neg_post_counter, pos_QC_counter, neg_QC_counter, comment_rate, post_rate)
 	
+	# Turn user data into a user object
+	def makeUser(sub, user, username, date_created, analysis_time, total_comment_karma, total_post_karma, total_karma, comment_karma_counter, post_karma_counter, pos_comment_counter, neg_comment_counter, pos_post_counter, neg_post_counter, pos_QC_counter, neg_QC_counter):
+		sub.current_users.append(user)
+		return User(sub, username, date_created, analysis_time, total_comment_karma, total_post_karma, total_karma, comment_karma_counter, post_karma_counter, pos_comment_counter, neg_comment_counter, pos_post_counter, neg_post_counter, pos_QC_counter, neg_QC_counter)
+	
+	# Turn a string into a dictionary
 	def makeDict(sub, info_str):
 		info_counter = Counter()
 		info_list = info_str.split()
 		while len(info_list) >= 2:
 			info_counter[info_list.pop()] = int(info_list.pop())
 		return info_counter
-	
+	# Retrieve a user's data from the database
 	def getUserInfo(sub, username):
 		userDB = TinyDB(sub.sub_name + '/userInfo.json')
 		try:
 			info_dict = userDB.search(find_stuff['username'] == username)[0]
 		except IndexError:
+			print('User: ' + username + ' not found')
 			return None
 		
 		date_created = info_dict['date_created']
@@ -212,12 +200,9 @@ class Subreddit:
 		pos_QC_counter = sub.makeDict(info_dict['pos_QC_counter'])
 		neg_QC_counter = sub.makeDict(info_dict['neg_QC_counter'])
 		
-		comment_rate = info_dict['comment_rate'].split()
-		post_rate = info_dict['post_rate'].split()
+		return User(sub, username, date_created, analysis_time, total_comment_karma, total_post_karma, total_karma, comment_karma_counter, post_karma_counter, pos_comment_counter, neg_comment_counter, pos_post_counter, neg_post_counter, pos_QC_counter, neg_QC_counter)
 		
-		return User(sub, username, date_created, analysis_time, total_comment_karma, total_post_karma, total_karma, comment_karma_counter, post_karma_counter, pos_comment_counter, neg_comment_counter, pos_post_counter, neg_post_counter, pos_QC_counter, neg_QC_counter, comment_rate, post_rate)
-		
-		
+	# Check if user should be analyzed and if they are accessible	
 	def checkUser(sub, user):
 		if user not in sub.whitelist and user not in sub.graylist and user not in sub.expired_users and str(user) not in sub.mods and user not in sub.current_users:
 			try:
@@ -227,43 +212,11 @@ class Subreddit:
 			return True
 		else:
 			return False
-			
+	# Clear the expired database after the users are analyzed	
 	def dropExpired(sub):
 		expiredDB = TinyDB(sub.sub_name + '/expired.json')
 		print(str(len(expiredDB)))
 		expiredDB.purge()
 		print('Expired user database was purged')
 		sub.expired_users.clear()
-	
-	def wipeCommAct(sub):
-		comm_act = TinyDB(sub_name + '/comment_activity.json')
-		comm_act.purge()
-		comm_act.insert({'created' : json_serial(datetime.now())})
-		sub.comment_activity.clear()
-		print('Comment Activity list was purged')
-		
-	def wipePostAct(sub):
-		post_act = TinyDB(sub_name + '/post_activity.json')
-		post_act.purge()
-		post_act.insert({'created' : json_serial(datetime.now())})
-		sub.post_activity.clear()
-		print('Post Activity list was purged')
-		
-	def updatePostAct(sub):
-		post_act = TinyDB(sub_name + '/post_activity.json')
-		hold_created = post_act['created']
-		post_act.purge()
-		post_act.insert({'created' : hold_created})
-		for username, activity in sub.post_activity.items():
-			post_act.insert({'username' : username, 'posts' : activity})
-		print('Comment Activity updated')
-			
-	def updateCommAct(sub):
-		comm_act = TinyDB(sub_name + '/comment_activity.json')
-		hold_created = comm_act['created']
-		comm_act.purge()
-		comm_act.insert({'created' : hold_created})
-		for username, activity in sub.comment_activity.items():
-			comm_act.insert({'username' : username, 'comments' : activity})
-		print('Post Activity updated')
 		

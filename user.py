@@ -29,7 +29,7 @@ def setUser(username):
 		return None
 
 class User:
-	def __init__(user_info, parent_sub, username, date_created, analysis_time, total_comment_karma, total_post_karma, total_karma, comment_karma_counter, post_karma_counter, pos_comment_counter, neg_comment_counter, pos_post_counter, neg_post_counter, pos_QC_counter, neg_QC_counter, comment_rate, post_rate):
+	def __init__(user_info, parent_sub, username, date_created, analysis_time, total_comment_karma, total_post_karma, total_karma, comment_karma_counter, post_karma_counter, pos_comment_counter, neg_comment_counter, pos_post_counter, neg_post_counter, pos_QC_counter, neg_QC_counter):
 		user_info.parent_sub = parent_sub
 		user_info.username = username
 		user_info.date_created = date_created
@@ -59,10 +59,6 @@ class User:
 			user_info.net_QC_counter[sub] = pos_QC_counter[sub]
 		for sub in neg_QC_counter:
 			user_info.net_QC_counter[sub] -= neg_QC_counter[sub]
-		
-		user_info.comment_rate = comment_rate
-		
-		user_info.post_rate = post_rate
 		
 		user_info.info_dict = {
 			'parent_sub' : parent_sub,
@@ -123,15 +119,7 @@ class User:
 			for sub in user_info.net_QC_counter:
 				net_QC_str += (sub + ' ' + str(user_info.net_QC_counter[sub]) + ' ')
 				
-			comment_rate_str = ''
-			for id in comment_rate:
-				comment_rate_str += id + ' '
-				
-			post_rate_str = ''
-			for id in post_rate:
-				post_rate_str += id + ' '
-				
 			#str_created = json_serial(date_created)
 			str_analyzed = json_serial(analysis_time)
-			userDB.insert({'username' : username, 'date_created' : date_created, 'analysis_time' : str_analyzed, 'total_comment_karma' : total_comment_karma, 'total_post_karma' : total_post_karma, 'total_karma' : total_karma, 'comment_karma_counter' : comment_karma_str, 'post_karma_counter' : post_karma_str, 'pos_comment_counter' : pos_comment_str, 'neg_comment_counter' : neg_comment_str, 'pos_post_counter' : pos_post_str, 'neg_post_counter' : neg_post_str, 'pos_QC_counter' : pos_QC_str, 'neg_QC_counter' : neg_QC_str, 'net_QC_counter' : net_QC_str, 'comment_rate' : comment_rate_str, 'post_rate' : post_rate_str})
+			userDB.insert({'username' : username, 'date_created' : date_created, 'analysis_time' : str_analyzed, 'total_comment_karma' : total_comment_karma, 'total_post_karma' : total_post_karma, 'total_karma' : total_karma, 'comment_karma_counter' : comment_karma_str, 'post_karma_counter' : post_karma_str, 'pos_comment_counter' : pos_comment_str, 'neg_comment_counter' : neg_comment_str, 'pos_post_counter' : pos_post_str, 'neg_post_counter' : neg_post_str, 'pos_QC_counter' : pos_QC_str, 'neg_QC_counter' : neg_QC_str, 'net_QC_counter' : net_QC_str})
 			

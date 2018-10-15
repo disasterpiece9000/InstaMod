@@ -6,7 +6,6 @@ import prawcore
 import sys
 import time
 import json
-import ast #https://stackoverflow.com/questions/35658160/python-script-to-parse-text-file-and-execute-inline-python-code
 from collections import Counter, OrderedDict
 from datetime import datetime, date
 from dateutil import relativedelta
@@ -19,16 +18,10 @@ from tinydb import TinyDB, Query
 from sub import Subreddit
 from user import User
 
-# Sub config imports
-#import CryptoTechnology/config.py as CTConfig
-from CryptoMarkets import config as CMConfig
-
-
 # List of subs for parsing folders
-master_list = {
-	#'CryptoTechnology' : CTConfig
-	'CryptoMarkets' : CMConfig
-}
+master_list = [
+	'CryptoMarkets'
+]
 
 # Save current time
 current_time = datetime.now()
@@ -43,8 +36,8 @@ find_stuff = Query()
 def setSubs():
 	sub_list = []
 	
-	for sub, file in master_list.items():
-		sub_list.append(Subreddit(sub, file))
+	for sub in master_list:
+		sub_list.append(Subreddit(sub))
 	return sub_list
 
 # Ensures user is accessible to the bot
@@ -53,17 +46,21 @@ def setUser(username):
 		return reddit.redditor(username)
 	except (prawcore.exceptions.NotFound, AttributeError):
 		return None
-		
+
+# Ensures that a string consists of a number only		
 def checkIsInt(target_str):
 	try:
 		int(target_str)
 		return True
 	except ValueError:
 		return False
-		
+
+# Main method for finding users to analyze		
 def scrapeSub(parent_sub, cmnt_limit, post_limit):
 	sub = parent_sub.sub_obj
+	# Stores thread IDs for comments to be removed under
 	locked_threads = {}
+	# Users without any flair will get instantly analyzed
 	insta_flair = []
 	
 	print ('Scraping comments\n')
@@ -72,14 +69,7 @@ def scrapeSub(parent_sub, cmnt_limit, post_limit):
 		user = comment.author
 		username = str(user)
 
-		if parent_sub.checkUser(user) == True:
-			if user not in parent_sub.comment_activity:
-				parent_sub.comment_activity[username] = []
-				
-			comm_act = parent_sub.comment_activity[username]
-			if comment.id not in comm_act:
-				comm_act.append(comment.id)
-				
+		if parent_sub.checkUser(user) == True:	
 			if user not in insta_flair:
 				flair = next(parent_sub.sub_obj.flair(user))['flair_text']
 				if flair != '' and flair != None:
@@ -95,12 +85,6 @@ def scrapeSub(parent_sub, cmnt_limit, post_limit):
 		username = str(user)
 
 		if parent_sub.checkUser(user) == True:
-			if user not in parent_sub.post_activity:
-				parent_sub.post_activity[username] = []
-				
-			post_act = parent_sub.post_activity[username]
-			if post.id not in post_act:
-				post_act.append(post.id)
 			if user not in insta_flair:
 				flair = list(parent_sub.sub_obj.flair(user))[0]
 				if flair != '' and flair != None:
@@ -121,19 +105,22 @@ def scrapeSub(parent_sub, cmnt_limit, post_limit):
 	
 	# Instantly flair users without any flair
 	analyzeUsers(parent_sub, insta_flair)
-		
+	
+	# 'INSTANT' or any number
 	update_interval = parent_sub.main_config['update_interval']
 	
+	# If update interval is set to instant then immediately flair users
 	if update_interval == 'INSTANT':
 		analyzeUsers(parent_sub, parent_sub.expired_users)
 		parent_sub.dropExpired()
-		
+	
+	# If update interval is set to a number, check if the expired users list is over that number
 	elif len(parent_sub.expired_users) > update_interval:
 			analyzeUsers(parent_sub, parent_sub.expired_users)
 			parent_sub.dropExpired()
 	
+	# Recheck comments for users who should have comments auto deleted or for comments in locked threads
 	if parent_sub.main_config['thread_lock'] == True or parent_sub.main_config['sub_lock'] == True:
-		# Recheck comments for users who should have comments auto deleted or for comments in locked threads
 		comments = sub.comments(limit = cmnt_limit)
 		for comment in comments:
 			user = comment.author
@@ -142,11 +129,10 @@ def scrapeSub(parent_sub, cmnt_limit, post_limit):
 			submis_id = post.fullname
 			user_info = parent_sub.getUserInfo(username)
 			
+			# User discovered who has not yet been analyzed or is whitelisted
 			if user_info == None:
-				print('User not found in database, skipping comment')
 				continue
 
-			# TODO: Handel sublock
 			if parent_sub.main_config['sub_lock'] == True:
 				user_locked = handelSubLock(parent_sub, user_info)
 				
@@ -179,40 +165,6 @@ def scrapeSub(parent_sub, cmnt_limit, post_limit):
 							print ('Comment removed and user notified')
 					elif action == 'SPAM':
 						comment.mod.remove(spam=True)
-						
-	if parent_sub.main_config['ratelimit'] == True:
-		config = parent_sub.ratelimit_config
-		
-		if config['COMMENTS'] != None:
-			for username, comments in parent_sub.comment_activity.items():
-				if checkUserTag(parent_sub, parent_sub.getUserInfo(username), config['COMMENTS']):
-					while len(comments) > config['COMMENTS']['max']:
-						remove_comm = reddit.comment(comments.pop[0])
-						remove_comm.reply(config['comment_remove_message'])
-						remove_comm.mod.remove()
-			
-			comm_interval = config['COMMENTS']['interval']
-			last_wipe = parent_sub.comm_age
-			tdelta = current_time - last_wipe
-			if tdelta.hours > comm_interval:
-				parent_sub.wipeCommAct()
-				
-			updateCommAct()
-						
-		if config['SUBMISSIONS'] != None:
-			for username, posts in parent_sub.post_activity.items():
-				if checkUserTag(parent_sub, parent_sub.getUserInfo(username), config['SUBMISSIONS']):
-					while len(posts) > config['SUBMISSIONS']['max']:
-						remove_post = reddit.submission(posts.pop[0])
-						remove_post.mod.remove()
-						
-			post_interval = config['SUBMISSIONS']['interval']
-			last_wipe = parent_sub.post_age
-			tdelta = current_time - last_wipe
-			if tdelta.hours > post_interval:
-				parent_sub.wipePostAct()
-				
-			updatePostAct()
 
 # Analyze a user's comments and posts and extract data from them
 def analyzeHistory(parent_sub, user):
@@ -232,9 +184,6 @@ def analyzeHistory(parent_sub, user):
 	neg_post_counter = Counter()
 	pos_QC_counter = Counter()
 	neg_QC_counter = Counter()
-	
-	comment_rate = []
-	post_rate = []
 	
 	# Parse comments
 	for comment in user.comments.new(limit = None):
@@ -265,14 +214,6 @@ def analyzeHistory(parent_sub, user):
 				elif word_count <= parent_sub.QC_config['neg_words']:
 					neg_QC_counter[abbrev] += 1
 					
-		if parent_sub.main_config['ratelimit'] == True and parent_sub.ratelimit_config['COMMENTS']['metric'] != None and sub_name == parent_sub.sub_name:
-			config = parent_sub.ratelimit_config
-			max_comments = config['max']
-			interval = config['interval']
-			tdelta = current_time - comment.created
-			if tdelta.hours <= interval:
-				comment_rate.append(comment.id)
-					
 	# Parse posts
 	for post in user.submissions.new(limit = None):
 		post_sub = post.subreddit
@@ -292,16 +233,8 @@ def analyzeHistory(parent_sub, user):
 				pos_comment_counter[abbrev] += 1
 			elif post_score < 0:
 				neg_comment_counter[abbrev] += 1
-				
-		if parent_sub.main_config['ratelimit'] == True and parent_sub.ratelimit_config['SUBMISSIONS']['metric'] != None :
-			config = parent_sub.ratelimit_config
-			max_posts = config['max']
-			interval = config['interval']
-			tdelta = current_time - comment.created
-			if tdelta.hours <= interval:
-				post_rate.append(post.id)
-				
-	return parent_sub.makeUser(user, username, date_created, analysis_time, total_comment_karma, total_post_karma, total_karma, comment_karma_counter, post_karma_counter, pos_comment_counter, neg_comment_counter, pos_post_counter, neg_post_counter, pos_QC_counter, neg_QC_counter, comment_rate, post_rate)
+	# Return user info			
+	return parent_sub.makeUser(user, username, date_created, analysis_time, total_comment_karma, total_post_karma, total_karma, comment_karma_counter, post_karma_counter, pos_comment_counter, neg_comment_counter, pos_post_counter, neg_post_counter, pos_QC_counter, neg_QC_counter)
 	
 
 # Get users' history and process data based on info
@@ -314,7 +247,9 @@ def analyzeUsers(parent_sub, user_list):
 		print ('\tAnalyzing user: ' + username)
 		user_info = analyzeHistory(parent_sub, user)
 		
+		# Subreddit Progression
 		if parent_sub.main_config['sub_progression'] == True:
+			# Check info against each tier's rule
 			for tier, config in parent_sub.progression_config.items():
 				if tier.startswith('tier') and checkInfoTag(parent_sub, user_info, config):
 					flair_text = config['flair_text']
@@ -326,9 +261,12 @@ def analyzeUsers(parent_sub, user_list):
 						parent_sub.addWhitelist(username)
 					elif permissions == 'FLAIR_ICONS':
 						parent_sub.addImgFlair(username)
+					# Break on the first tier matched to avoid multiple tiers
 					break
-		
+					
+		# Subreddit Tags
 		if parent_sub.main_config['sub_tags'] == True:
+			# Check info against each tag's rule
 			for tag, config in parent_sub.subtag_config.items():
 				if tag.startswith('subtag'):
 					hold_subs = getSubTag(parent_sub, user_info, config)
@@ -338,6 +276,7 @@ def analyzeUsers(parent_sub, user_list):
 					for sub in hold_subs:
 						parent_sub.appendFlair(user, (pre_text + sub + post_text), None)
 		
+		# Account Age Tag
 		if parent_sub.main_config['accnt_age'] != False:
 			userCreated = user_info.date_created
 			tdelta = relativedelta.relativedelta(datetime.now(), datetime.fromtimestamp(user_info.date_created))
@@ -358,15 +297,7 @@ def analyzeUsers(parent_sub, user_list):
 							parent_sub.appendFlair(user, flairText + ' month old', None)
 						else:
 							parent_sub.appendFlair(user, flairText + ' months old', None)
-		"""		
-		if parent_sub.main_config['etc_tags'] == True:
-			for tag, config in parent_sub.tag_config:
-				if tag.startswith("tag"):
-					conditional_str = config[0]
-					flair_text = config[1]
-					flair_css = config[2]
 		"""
-		
 		if parent_sub.main_config['ratelimit'] == True:
 			if parent_sub.ratelimit_config['COMMENTS']['metric'] != None:
 				config = parent_sub.ratelimit_config['COMMENTS']
@@ -395,14 +326,17 @@ def analyzeUsers(parent_sub, user_list):
 						message_info = config['comment_remove_message']
 						author.message(message_info[0], ("\n\nSubreddit: " + parent_sub.sub_name + "\n\nPost: " + post.title + "\n\nComment Rate Limit: Over " + str(max) + ' comments in under ' + str(config['interval']) + ' hours' + "\n\n" + message_info[1]))
 						comment.mod.remove()	
-					
+		"""
+	# Assign users' flair based on analysis				
 	parent_sub.flairUsers()
-	
+
+# Check for PMs that require automated actions
 def readPMs(parent_sub):
 	messages = reddit.inbox.unread()
 	for message in messages:
 		author = message.author
 		username = str(author)
+		# Command messages must have '!' in the start of their subject
 		if message.subject.startswith('!' + parent_sub.sub_name) and username in parent_sub.mods:
 			print('Message accepted: ' + message.body)
 			message_words = message.body.split()
@@ -412,7 +346,8 @@ def readPMs(parent_sub):
 				message.mark_read()
 				print ('Message resolved without action: Invalid number of arguments')
 				continue
-			
+				
+			# Target username must be the second word listed
 			else:
 				target_username = message_words[1]
 				user = setUser(target_username)
@@ -421,20 +356,19 @@ def readPMs(parent_sub):
 					message.mark_read()
 					print ('Message resolved without action: Target user not accessible')
 					continue
-				
+				# Whitelist
 				if message_words[0] == "!whitelist":
 					if str(user) not in parent_sub.whitelist:
 						parent_sub.addWhitelist(target_username)
 						message.reply('The user: ' + target_username + ' has been added to the whitelist and will no longer recieve new flair. They are also now eligible for custom flair. The user will be notified of their whitelisted status now.')
 						message.mark_read()
-						
 						user.message('You have been granted permission to assign custom flair! A moderator of r/' + parent_sub.sub_name + ' has granted your account permission to assign custom flair. To choose your flair, send me (/u/InstaMod) a private message with the syntax:\n\nSubject:\n\n    !SubredditName\n\nBody:    !flair flair text here\n\nFor example, if you want your flair to say "Future Proves Past" then your PM should look like this:\n\n    !flair Future Proves Past\n\n If you have any questions, please send /u/shimmyjimmy97 a PM, or contact the moderators.')
 						print ('Message resolved successfully')
 					else:
 						message.reply('The user: ' + target_username + ' is already in the whitelist')
 						message.mark_read()
 						print ('Message resolved without action: User already in whitelist')
-				
+				# Graylist/Greylist
 				if message_words[0] == "!greylist" or message_words[0] == '!graylist':
 					if str(user) not in parent_sub.graylist:
 						parent_sub.addGraylist(target_username)
@@ -445,7 +379,7 @@ def readPMs(parent_sub):
 						message.reply('The user: ' + target_username + ' is already in the graylist')
 						message.mark_read()
 						print ('Message resolved without action: User already in graylist')
-				
+				# Custom Flair
 				if message_words[0] == '!flair':
 					if target_username in parent_sub.whitelist or username in parent_sub.mods:
 						new_flair = message.body[7:]
@@ -459,16 +393,15 @@ def readPMs(parent_sub):
 						print ('Message resolved without action: User not approved for custom flair')
 						continue
 					
-				
-		
+# Compares link flair to sub lock config flairs	
 def checkThreadLock(parent_sub, link_flair):
 	for lock in parent_sub.threadlock_config:
 		if lock.startswith('threadlock') and link_flair == parent_sub.threadlock_config[lock]['flair_ID']:
 			return lock
 	return None
-						
+
+# Creates a list of target subreddits from the config file settings
 def getTargetSubs(parent_sub, target_subs):
-	# Makes a list of subs to total data from
 	sub_list = []
 	if target_subs == 'A_SUBS':
 		for sub in parent_sub.A_subs:
@@ -484,7 +417,8 @@ def getTargetSubs(parent_sub, target_subs):
 			if abbrev != None:
 				sub_list.append(abbrev)
 	return sub_list
-	
+
+# Makes a comparison based on config rule settings
 def checkComparison(comparison, total_value, value):
 	if comparison == 'LESS_THAN':
 		if total_value < value:
@@ -512,13 +446,15 @@ def checkComparison(comparison, total_value, value):
 		return False
 	else:
 		return False
-		
+
+# Sort a Counter object from least common to most common		
 def getLeastCommon(array, to_find=None):
     counter = collections.Counter(array)
     if to_find is None:
         return sorted(counter.items(), key=itemgetter(1), reverse=False)
     return heapq.nsmallest(to_find, counter.items(), key=itemgetter(1))
-		
+
+# Check comments in locked thread against the threads rule	
 def handelThreadLock(parent_sub, lock_status, user_info):
 	lock_type = parent_sub.threadlock_config[lock_status]
 	metric = lock_type['metric']
@@ -538,7 +474,7 @@ def handelThreadLock(parent_sub, lock_status, user_info):
 			
 	return checkComparison(comparison, total_value, value)
 	
-				
+# Make Subreddit Tags based on users history			
 def getSubTag(parent_sub, user_info, config):
 	metric = config['metric']
 	target_subs = config['target_subs']
@@ -583,8 +519,7 @@ def getSubTag(parent_sub, user_info, config):
 				print('Sub not in list')
 		return hold_subs
 				
-				
-						
+# Check user info agaisnt sub rule					
 def checkInfoTag(parent_sub, user_info, config):
 	metric = config['metric']
 	if metric == 'ELSE':
@@ -605,7 +540,8 @@ def checkInfoTag(parent_sub, user_info, config):
 			total_value += user_data[abbrev]
 		
 	return checkComparison(comparison, total_value, value)
-		
+
+# Count the number of words in a comment	
 def countWords(text):
 	word_count = 0
 	sentences = sent_tokenize(text)
@@ -618,6 +554,7 @@ def countWords(text):
 				
 	return word_count
 	
+# Main method for running the bot
 command = sys.argv[1]
 
 if command == 'auto':
