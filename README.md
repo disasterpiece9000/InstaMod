@@ -20,11 +20,8 @@ Moderators can provide lists of subreddits which the bot will collect informatio
 ### Subreddit Progression:
 As a user participates more and more in the community, their flair can change to represent their involvement. Certain tags, or levels of user participation, can grant the user access to special priveledges. This includes the ability to assign themself custom flair and the ability to append their automatic flair with a designated list of :images:. For instance, you could give every user with less than 25 positive comments in your subreddit a tag that says "New Here". While every user with over 100 positive comments gets to overwrite their automatic flair.
 
-### Etc Tags:
-In case that wasn't enough, I have an Ace up my sleeve. Tags in this section allow you to replace the configuration file's rule settings and inject code directly into the program. This allows for the highest level of customization, but also requires knowledge of Python and a somewhat good understanding of the documentation. You are essentially writing the block of code that assigns the tag manually, instead of using the configuration file to define the tag.
-
 ### Advanced Thread/Sub Locking:
 Traditional thread locking is all-or-nothing and AutoModerator can only filter users' comments based on flair text and account age. With InstaMod, a post's comment section can be filtered through a rule. If a user doesn't meet the requirements, then their comment can either be removed or marked spam. There is also a way to automatically notify the user of their comment's deletion. Moderators simply have to assign a post a specific flair for it to be locked. This type of rule can also be applied to the subreddit as a whole, and is activated/deactivated via PM.
 
-### Custom Rate-limiting:
+### Custom Rate-limiting (Comming Soon):
 Reddit has a built in rate-limit system to prevent spam, but with InstaMod this can be expanded and customized to ensure that new users in your subreddit cannot spam comments or submissions. Moderators can design the bot to prevent users with less than 20 positive comments from submitting more than 5 posts in a day, or it could prevent users with more negative than positive comments from commenting more than once a day. The options are endless!
