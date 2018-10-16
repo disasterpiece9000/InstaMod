@@ -3,7 +3,7 @@
 
 ### InstaMod is capable of automatically assigning users' flair, advanced thread locking, subreddit-wide filtering, creating a subreddit progression system, and more. 
 
-It can also work in conjunction with AutoMod via user flair text. Below I will describe the different rule types and give an example of how some of them work.
+It can also work in conjunction with AutoMod via user flair text. Below I will describe the different rule types and give an example of how some of the systems work.
 
 -----
 ### Automatic User Flair:
