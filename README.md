@@ -15,7 +15,7 @@ Moderators can provide lists of subreddits which the bot will collect informatio
 ### Subreddit Progression:
 As a user participates more and more in the community, their flair can change to represent their involvement. Certain tags, or levels of user participation, can grant the user access to special priveledges. This includes the ability to assign themself custom flair and the ability to append their automatic flair with a designated list of :images:
 
-### Advanced Thread/Sub Locking:
+### Advanced Thread Locking:
 Traditional thread locking is inherantly all-or-nothing. With InstaMod, a post's comment section can be filtered through a requirement based on the user's account activity. If a user doesn't meet the requirements, then their comment can either be removed or marked spam. There is an option to automatically notify the user of their comment's deletion. Moderators simply have to assign a post a specific flair for it to be locked.
 
 ### Custom Rate-limiting (Comming Soon):
