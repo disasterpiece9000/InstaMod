@@ -19,7 +19,7 @@ As a user participates more and more in the community, their flair can change to
 Traditional thread locking is inherantly all-or-nothing. With InstaMod, a post's comment section can be filtered through a requirement based on the user's account activity. If a user doesn't meet the requirements, then their comment can either be removed or marked spam. There is an option to automatically notify the user of their comment's deletion. Moderators simply have to assign a post a specific flair for it to be locked.
 
 ### Custom Rate-limiting (Comming Soon):
-Reddit has a built in rate-limit system to prevent spam, but with InstaMod this can be expanded and customized to ensure that new users in your subreddit cannot spam comments or submissions. Moderators can design the bot to prevent users with less than 20 positive comments from submitting more than 5 posts in a day, or it could prevent users with more negative than positive comments from commenting more than once a day.
+Reddit has a built in rate-limit system to prevent spam, but with InstaMod this can be expanded and customized to ensure that new users in your subreddit cannot spam comments or submissions. Moderators can design the bot to prevent users with less than 20 positive comments from submitting more than 5 posts in a day, or it could prevent users with more negative than positive comments from commenting more than once a day. Once again, this is just a few of the endless posibilities that InstaMod is capable of implementing.
 
 ### PM Commands
 Moderators and users can have even more fine tuned control over InstaMod's actions by sending it a PM command. Each PM must contain "!SubredditName" in the subject and one of these commands in the body:
