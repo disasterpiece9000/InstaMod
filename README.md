@@ -7,7 +7,7 @@ InstaMod is a fully customizable suite of automated moderator actions. These act
 
 -----
 ### Automatic User Flair:
-Features, such as the subreddit progression system and subreddit tags, can be displayed in a user's flair and continuously updated. InstaMod continuously looks for new comments to ensure that all users have the appropriate flair. Certain users can be exempted from the automatic flair, and can be granted the ability to assign their own custom flair through a PM command.
+Features, such as the subreddit progression system and subreddit tags, can be displayed in a user's flair and are consistently kept up to date. InstaMod continuously looks for new comments to ensure that all users have the appropriate flair. Certain users can be exempted from the automatic flair, and can be granted the ability to assign their own custom flair through a PM command.
 
 ### Subreddit Tags:
 Moderators can provide lists of subreddits which the bot will collect information on. This information can be used to create tags for users' flair. The sub tag's rules can be set to display a user's top 3 most used communities from a list of related subreddits. It could also be designed to show all the subreddits where a user has been consistently downvoted. These are just a few examples of the possibilities.
