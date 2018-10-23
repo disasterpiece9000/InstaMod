@@ -2,6 +2,12 @@
 # Configuration File Documentation
 Here I will describe each element of the provided config file, list the possible options for each setting, and provide some example cases. If you want to jump to the interesting bits, please see the "Defining a rule" section. But it mighttttt not make a ton of sense
 
+### General Rules of Thumb for Editing the Config Page
+* **Indentation matters** - The bot runs on Python so indentation is considered syntax
+* **Quotation marks are key** - Everything except numbers, True/False, and None should be encased in either ' or ". It doesn't matter what you choose, as long as the opening quotation mark matches the closing one.\
+* **Case sensitive** - Be sure what you add for certain sections, such as permissions, matches the correct case. Some things use all upper case, other use all lower case. Some contain spaces, and other use underscores instead. I will work on making this more consistent in future updates.
+* **Commas** - The end of each line in a section or subsection should contain a comma. The exception to this rule is the last line of each section or subsection. So if you add a new line, and it's not the last line, throw a comma in there at the end. This one is tricky if you aren't familiar with coding syntax, but in general, just follow the pattern of the existing settings and you should be fine.
+
 ### SUB_CONFIG: Primary settings for toggling on/off features, as well as other meta options
 * **name** - Name of the subreddit InstaMod is running on
 * **abbrev** - Abbreviation of the subreddit
