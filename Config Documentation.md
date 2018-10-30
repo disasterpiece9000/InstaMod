@@ -26,7 +26,7 @@ Comments with values <= both of these numbers count as 1 negative QC
 * **negative karma** - comments must have a score thats <= this number
 * **negative words** - comments must contain an amount of words <= this number
 -----
-## Options for different rule settings: 
+# Options for different rule settings: 
 Each term must be used inbetween '' and typed the same way
 
 ### metric: user data used for rule definition
@@ -62,7 +62,7 @@ Each term must be used inbetween '' and typed the same way
 * FLAIR_IMAGES - The user will be able to append their flair with a selection of :image: flair's that the subreddit has already defined. Available :images: can be set using the approved_icons list in the sub_config option
 * CUSTOM_FLAIR - The user can assign themself custom flair and overwrite the automatic flair. User's must have control of their flair revoked for this bot to effectively flair users.
 
-## Defining a rule
+# Defining a rule
 Wow you made it this far. I'm honestly impressed. Lucky for you, this is where it gets juicy. Let's take a look at a sample rule and see if we can make sense of it:
 
     'tier1' : {'metric' : 'positive comments', 
@@ -106,7 +106,8 @@ This one reads almost the same. The only thing that's changed is the value optio
 These tags are applied for each subreddit (individually) in the target_subs setting. That means that their metrics are not totaled like in the previous section. Before I show you an example, we've got some more key terms to go over class. Take out your pen, and get something to write on:
 * sort - This can be set to MOST_COMMON, LEAST_COMMON, or None. Most common sorts the results from high to low, least common sorts them from low to high, and None just returns them in the order they are listed.
 * tag_cap - The maximum number of subs that will be listed as a result of the rule
-* pre_text and post_text - These strings are appended to the subreddit abbreviation
+* show_value - This will append the subreddit abbreviation with ": X" where X is the number corresponding to the user's specified metric
+* pre_text and post_text - These strings are concatonated with the subreddit abbreviation
 
 Since you've stuck with me this far, here are 2 examples:
 
@@ -121,10 +122,12 @@ Since you've stuck with me this far, here are 2 examples:
 		'comparison' : 'GREATER_THAN_EQUAL_TO', 
         
 		'value' : 15, 
+		
+		'show_value': True,
         
 		'pre_text' : 'r/', 
         
-		'post_text' : ''},
+		'post_text' : ' QC'},
 				
 	'subtag2' : {'metric' : 'net QC', 
   
@@ -137,13 +140,15 @@ Since you've stuck with me this far, here are 2 examples:
 		'comparison' : 'LESS_THAN_EQUAL_TO', 
         
 		'value' : -10, 
+		
+		'show_value': False,
         
 		'pre_text' : 'Trolls r/', 
         
 		'post_text' : ''}
         
       
-The first rule tags users with 15 or higher net QC with the text "r/SomeSub", while the second rule tags users with -10 or less net QC with the text "Trolls r/SomeSub". Where "SomeSub" is the given abbreviation for a subreddit.
+The first rule tags users with 15 or higher net QC with the text "r/SomeSub : X QC", while the second rule tags users with -10 or less net QC with the text "Trolls r/SomeSub". Where "SomeSub" is the given abbreviation for a subreddit.
 
 ### THREADLOCK_CONFIG:
 InstaMod will scan for posts with specific post flair and filter the comments under it. A comment can either be removed or marked as spam. The bot can also notify users of their comment's removal. Same as the last one, we've got some new key terms:
@@ -167,4 +172,4 @@ Ok now that that's out of the way, more examples! Here is a thread lock that fil
 
 Translation: If a user has 20 or less positive comments, remove only their comments under this post
 -----
-##Well folks, believe it or not that's all I've got for now. I'll add more to this later as more features come online, but until then, try and get creative with these settings! There is a ton of stuff you can do with this bot, and I'm sure there are even more I haven't though of. If you have any ideas of what to add, code suggestions, etc, please feel free to shoot me a message on Reddit: /u/shimmyjimmy97
+## Well folks, believe it or not that's all I've got for now. I'll add more to this later as more features come online, but until then, try and get creative with these settings! There is a ton of stuff you can do with this bot, and I'm sure there are even more I haven't though of. If you have any ideas of what to add, code suggestions, etc, please feel free to shoot me a message on Reddit: /u/shimmyjimmy97
