@@ -37,14 +37,20 @@ class Subreddit:
 	# Flair all users in users_and_flair
 	def flairUsers(sub):
 		sub_obj = sub.sub_obj
-		print ('Users and corresponding flair:\n')
+		print ('Users and corresponding flair:')
 		for username in sub.users_and_flair:
 			user = setUser(username)
-			flair = sub.users_and_flair[username]['text']
+			new_flair = sub.users_and_flair[username]['text']
 			css = sub.users_and_flair[username]['css']
-			sub_obj.flair.set(user, flair, css)
-			print (username + ': ' + flair)
+			old_flair = next(sub.sub_obj.flair(user))['flair_text']
+			
+			if new_flair != old_flair:
+				sub_obj.flair.set(user, new_flair, css)
+				print ('\t' + username + ': ' + new_flair)
+			else:
+				print('\t' + username + ': Flair is unchanged')
 		sub.users_and_flair.clear()
+		print('\n')
 
 	# Flair one user from users_and_flair
 	def flairUser(sub, user, flair_text):
@@ -159,7 +165,7 @@ class Subreddit:
 		sub.updateSub()
 
 	def updateSub(sub, sub_name):
-		print('Updating ' + sub_name + '\n')
+		print('Updating ' + sub_name)
 		current_time = datetime.now()
 
 		str_config = reddit.subreddit(sub_name).wiki['InstaModSettings'].content_md
@@ -195,14 +201,14 @@ class Subreddit:
 			user = setUser(username['username'])
 			if user != None:
 				sub.whitelist.append(user)
-		print ('Read ' + str(len(sub.whitelist)) + ' users from whitelist\n')
+		print ('\tRead ' + str(len(sub.whitelist)) + ' users from whitelist')
 
 		graylistDB = TinyDB(sub_name + '/graylist.json')
 		for username in graylistDB:
 			user = setUser(username['username'])
 			if user != None:
 				sub.graylist.append(user)
-		print ('Read ' + str(len(sub.graylist)) + ' users from greylist\n')
+		print ('\tRead ' + str(len(sub.graylist)) + ' users from greylist')
 
 		currentDB = TinyDB(sub_name + '/userInfo.json')
 		for user_info in currentDB:
@@ -210,25 +216,25 @@ class Subreddit:
 			exp_length = sub.main_config['tag_expiration']
 			#remove users with expired flair and add current users to list
 			if tdelta.days > exp_length:
-				print (user_info['username'] + ' has old flair')
+				print ('\t' + user_info['username'] + ' has old flair')
 				currentDB.remove(find_stuff['username'] == user_info['username'])
 			else:
 				user = setUser(user_info['username'])
 				#check if user is valid
 				if user != None:
 					sub.current_users.append(user)
-		print ('Read ' + str(len(sub.current_users)) + ' current users\n')
+		print ('\tRead ' + str(len(sub.current_users)) + ' current users')
 
 		expiredDB = TinyDB(sub_name + '/expired.json')
 		for username in expiredDB:
 			user = setUser(username['username'])
 			if user != None:
 				sub.expired_users.append(user)
-		print ('Read ' + str(len(sub.expired_users)) + ' users from expired list\n')
+		print ('\tRead ' + str(len(sub.expired_users)) + ' users from expired list')
 
 		flair_imgDB = TinyDB(sub_name + '/flair_img.json')
 		for username in flair_imgDB:
 			user = setUser(username['username'])
 			if user != None:
 				sub.flair_img.append(user)
-		print ('Read ' + str(len(sub.flair_img)) + ' users from flair image permission list\n')
+		print ('\tRead ' + str(len(sub.flair_img)) + ' users from flair image permission list\n')

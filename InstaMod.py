@@ -20,6 +20,7 @@ from user import User
 
 # List of subs for parsing folders
 master_list = [
+	'CryptoCurrency',
 	'CryptoMarkets',
 	'CryptoTechnology'
 ]
@@ -66,12 +67,12 @@ def sortComment(sub_dict, comment):
 
 	# Sorts user for instant analysis or expired flair
 	if parent_sub.checkUser(user) == True:
+		print('Found comment from User: ' + username + '\tSubreddit: ' + str(sub))
 		flair = next(parent_sub.sub_obj.flair(user))['flair_text']
 		if flair != '' and flair != None:
 			parent_sub.addExpired(user)
 		else:
 			analyzeUsers(parent_sub, [user])
-			print ('User: ' + username + ' instantly analyzed')
 
 	# Holds user profile data
 	user_info = None
@@ -125,6 +126,7 @@ def sortComment(sub_dict, comment):
 
 	# If update interval is set to a number, check if the expired users list is over that number
 	elif len(parent_sub.expired_users) > update_interval:
+			print ('\nAnalyzing all users in expired list: ' + str(len(parent_sub.expired_users)) + '\n')
 			analyzeUsers(parent_sub, parent_sub.expired_users)
 			parent_sub.dropExpired()
 
@@ -202,7 +204,6 @@ def analyzeHistory(parent_sub, user):
 # Get users' history and process data based on info
 def analyzeUsers(parent_sub, user_list):
 	current_time = datetime.now()
-	print ('\nAnalyzing all users in current list: ' + str(len(user_list)) + '\n')
 
 	for user in user_list:
 		try:
@@ -238,9 +239,12 @@ def analyzeUsers(parent_sub, user_list):
 				if tag.startswith('subtag'):
 					hold_subs = getSubTag(parent_sub, user_info, config)
 					pre_text = config['pre_text']
-					post_text = config['post_text']
 
 					for sub in hold_subs:
+						post_text = ''
+						if config['show_value'] == True:
+							post_text += ': ' + str(user_info.info_dict[config['metric']][sub])
+						post_text += config['post_text']
 						parent_sub.appendFlair(user, (pre_text + sub + post_text), None)
 
 		# Account Age Tag
@@ -310,7 +314,7 @@ def readPMs(sub_dict):
 			print('Message accepted: ' + message.body + '\tSubreddit: ' + message_sub)
 			message_words = message.body.split()
 
-			if message.body == "!wipe":
+			if message.body == "!wipe" and username in parent_sub.mods:
 				parent_sub.wipePM()
 				message.reply('The user database has been wiped successfully')
 				message.mark_read()
@@ -480,7 +484,6 @@ def getSubTag(parent_sub, user_info, config):
 			data = sub[1]
 			if abbrev in sub_list:
 				if checkComparison(comparison, data, value):
-					print ('Sub accepted')
 					hold_subs.append(sub[0])
 					tag_count += 1
 			else:
@@ -532,20 +535,20 @@ if command == 'auto':
 	sub_str = "+".join(master_list)
 
 	while True:
-		current_time = datetime.now()
 		try:
 			all_subs = reddit.subreddit(sub_str)
-			for comment in all_subs.stream.comments():
+			for comment in all_subs.stream.comments(pause_after=1):
+				current_time = datetime.now()
 				if comment == None:
 					readPMs(sub_dict)
-
+					continue
 				tdelta = current_time - start_time
-				hour_delta = tdelta.seconds / 60 / 60
-				if hour_delta >= 4:
+				hour_delta = tdelta.seconds / 3600.0
+				if hour_delta >= 1:
 					for name, obj in sub_dict.items():
 						obj.updateSub(name)
 						print('Updated Sub: ' + name)
-
+						start_time = datetime.now()
 				else:
 					sortComment(sub_dict, comment)
 		except:
