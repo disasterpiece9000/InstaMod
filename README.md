@@ -9,6 +9,9 @@ InstaMod is a fully customizable suite of automated moderator actions. These act
 ### Automatic User Flair:
 Features, such as the subreddit progression system and subreddit tags, can be displayed in a user's flair and are consistently kept up to date. InstaMod continuously looks for new comments to ensure that all users have the appropriate flair. Certain users can be exempted from the automatic flair, and can be granted the ability to assign their own custom flair through a PM command.
 
+### Quality Comments:
+Quality Comments is a metric that can be used to gague user participation in specified subreddits. This is reffered to as QC for short. Moderators can specify a criteria, using a comment's score and word count, and the bot will count comments that meet the criteria. There is an option to define a "good comment" and a "bad comment". Each of those data points can be used by the bot, or they can be combined into net QC. Net QC consists of the number of good comments minus the number of bad comments. This is the most accurate way to gague user participation through InstaMod.
+
 ### Subreddit Tags:
 Moderators can provide lists of subreddits which the bot will collect information on. This information can be used to create tags for users' flair. The sub tag's rules can be set to display a user's top 3 most used communities from a list of related subreddits. It could also be designed to show all the subreddits where a user has been consistently downvoted. These are just a few examples of the possibilities.
 
