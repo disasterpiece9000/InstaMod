@@ -33,6 +33,16 @@ def json_serial(obj):
 class Subreddit:
 	def __init__(sub, sub_name):
 		sub.updateSub(sub_name)
+		sub.start_interval = datetime.now()
+	
+	# Checks if the ratelimit dict needs to be cleared
+	def checkInterval(sub):
+		tdelta = datetime.now() - sub.time_created
+		hour_delta = tdelta.seconds / 3600.0
+		if hour_delta >= sub.ratelimit_config['comments']['interval']:
+			sub.ratelimit.clear()
+			sub.start_interval = datetime.now()
+			print('Ratelimit interval updated')
 
 	# Flair all users in users_and_flair
 	def flairUsers(sub):
@@ -50,13 +60,12 @@ class Subreddit:
 			else:
 				print('\t' + username + ': Flair is unchanged')
 		sub.users_and_flair.clear()
-		print('\n')
 
 	# Flair one user from users_and_flair
-	def flairUser(sub, user, flair_text):
+	def flairUser(sub, user, flair_text, css):
 		sub_obj = sub.sub_obj
-		sub_obj.flair.set(user, flair_text)
-		print('Flaired user: ' + str(user) + '\tFlair: ' + flair_text)
+		sub_obj.flair.set(user, flair_text, css)
+		print('Flaired user: ' + str(user) + '\tFlair: ' + flair_text + '\tCSS:' + css)
 
 	# Concatonate flair with existing
 	def appendFlair(sub, user, new_flair, css):
@@ -153,8 +162,8 @@ class Subreddit:
 		expiredDB = TinyDB(sub.sub_name + '/expired.json')
 		print(str(len(expiredDB)))
 		expiredDB.purge()
-		print('Expired user database was purged')
 		sub.expired_users.clear()
+		print('Expired user database was purged')
 
 	# Deletes all the contents of the user info database
 	def wipePM(sub):
@@ -167,22 +176,27 @@ class Subreddit:
 	def updateSub(sub, sub_name):
 		print('Updating ' + sub_name)
 		current_time = datetime.now()
-
+		
+		# Read current settings from wiki page
 		str_config = reddit.subreddit(sub_name).wiki['InstaModSettings'].content_md
 		sub_config = literal_eval(str_config)
 
+		# Sort configuration settings
 		sub.main_config = sub_config['SUB_CONFIG']
 		sub.QC_config = sub_config['QC_CONFIG']
 		sub.progression_config = sub_config['PROGRESS_CONFIG']
 		sub.subtag_config = sub_config['SUBTAG_CONFIG']
 		sub.threadlock_config = sub_config['THREADLOCK_CONFIG']
 		sub.sublock_config = sub_config['SUBLOCK_CONFIG']
+		sub.ratelimit_config = sub_config['RATELIMIT_CONFIG']
 
+		# Get subreddit lists
 		sub.A_subs = sub_config['A_SUBS']
 		sub.B_subs = sub_config['B_SUBS']
 		sub.all_subs = sub_config['B_SUBS']
 		sub.all_subs.update(sub.A_subs)
 
+		# Create lists for user databases
 		sub.whitelist = []
 		sub.graylist = []
 		sub.current_users = []
@@ -190,19 +204,23 @@ class Subreddit:
 		sub.users_and_flair = {}
 		sub.flair_img = []
 		sub.lock_mode = None
+		sub.ratelimit = Counter()
 
+		# Store subreddit info
 		sub.mods = sub.main_config['mods']
 		sub.sub_name = sub_name
 		sub.sub_abbrev = sub_config['SUB_CONFIG']['abbrev']
 		sub.sub_obj = reddit.subreddit(sub_name)
 
+		# Read whitelist
 		whitelistDB = TinyDB(sub_name + '/whitelist.json')
 		for username in whitelistDB:
 			user = setUser(username['username'])
 			if user != None:
 				sub.whitelist.append(user)
 		print ('\tRead ' + str(len(sub.whitelist)) + ' users from whitelist')
-
+	
+		# Read graylist
 		graylistDB = TinyDB(sub_name + '/graylist.json')
 		for username in graylistDB:
 			user = setUser(username['username'])
@@ -210,6 +228,7 @@ class Subreddit:
 				sub.graylist.append(user)
 		print ('\tRead ' + str(len(sub.graylist)) + ' users from greylist')
 
+		# Read current users
 		currentDB = TinyDB(sub_name + '/userInfo.json')
 		for user_info in currentDB:
 			tdelta = current_time - dateutil.parser.parse(user_info['analysis_time'])
@@ -225,6 +244,7 @@ class Subreddit:
 					sub.current_users.append(user)
 		print ('\tRead ' + str(len(sub.current_users)) + ' current users')
 
+		# Read expired users
 		expiredDB = TinyDB(sub_name + '/expired.json')
 		for username in expiredDB:
 			user = setUser(username['username'])
@@ -232,6 +252,7 @@ class Subreddit:
 				sub.expired_users.append(user)
 		print ('\tRead ' + str(len(sub.expired_users)) + ' users from expired list')
 
+		# Read users with image flair permissions
 		flair_imgDB = TinyDB(sub_name + '/flair_img.json')
 		for username in flair_imgDB:
 			user = setUser(username['username'])

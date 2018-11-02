@@ -64,6 +64,7 @@ def sortComment(sub_dict, comment):
 	username = str(user)
 	post = comment.submission
 	post_flair = post.link_flair_text
+	
 
 	# Sorts user for instant analysis or expired flair
 	if parent_sub.checkUser(user) == True:
@@ -73,7 +74,26 @@ def sortComment(sub_dict, comment):
 			parent_sub.addExpired(user)
 		else:
 			analyzeUsers(parent_sub, [user])
+			
+	# Store comment for ratelimit count
+	if parent_sub.main_config['ratelimit'] == True:
+		parent_sub.checkInterval()
+		parent_sub.ratelimit[username] += 1
 
+	# 'INSTANT' or any number
+	update_interval = parent_sub.main_config['update_interval']
+
+	# If update interval is set to instant then immediately flair users
+	if update_interval == 'INSTANT':
+		analyzeUsers(parent_sub, parent_sub.expired_users)
+		parent_sub.dropExpired()
+
+	# If update interval is set to a number, check if the expired users list is over that number
+	elif len(parent_sub.expired_users) > update_interval:
+			print ('\nAnalyzing all users in expired list: ' + str(len(parent_sub.expired_users)) + '\n')
+			analyzeUsers(parent_sub, parent_sub.expired_users)
+			parent_sub.dropExpired()
+			
 	# Holds user profile data
 	user_info = None
 
@@ -82,8 +102,8 @@ def sortComment(sub_dict, comment):
 			if post_flair != None:
 				lock_status = checkThreadLock(parent_sub, post.link_flair_text)
 				if lock_status != None:
-
 					user_info = parent_sub.getUserInfo(username)
+					
 					if user_info != None and handelThreadLock(parent_sub, lock_status, user_info):
 						lock_type = parent_sub.threadlock_config[lock_status]
 						action = lock_type['action']
@@ -99,10 +119,11 @@ def sortComment(sub_dict, comment):
 
 	# Check comment for Sub Lock
 	if parent_sub.main_config['sub_lock'] == True:
-		user_info = parent_sub.getUserInfo(username)
+		if user_info == None:
+			user_info = parent_sub.getUserInfo(username)
 		if user_info != None:
-
 			user_locked = handelSubLock(parent_sub, user_info)
+			
 			if user_locked != False:
 				lock_type = parent_sub.sublock_config[user_locked]
 				action = lock_type['action']
@@ -115,21 +136,27 @@ def sortComment(sub_dict, comment):
 						print ('Comment removed and user notified')
 				elif action == 'SPAM':
 					comment.mod.remove(spam=True)
-
-	# 'INSTANT' or any number
-	update_interval = parent_sub.main_config['update_interval']
-
-	# If update interval is set to instant then immediately flair users
-	if update_interval == 'INSTANT':
-		analyzeUsers(parent_sub, parent_sub.expired_users)
-		parent_sub.dropExpired()
-
-	# If update interval is set to a number, check if the expired users list is over that number
-	elif len(parent_sub.expired_users) > update_interval:
-			print ('\nAnalyzing all users in expired list: ' + str(len(parent_sub.expired_users)) + '\n')
-			analyzeUsers(parent_sub, parent_sub.expired_users)
-			parent_sub.dropExpired()
-
+					
+	# Check comment for Ratelimit
+	if parent_sub.main_config['ratelimit'] == True:
+		if user_info == None:
+			user_info = parent_sub.getUserInfo(username)
+		if user_info != None:
+			for tag, config in parent_sub.ratelimit_config.items():
+			
+				if tag.startswith('comments') and checkInfoTag(parent_sub, user_info, config):
+					max_comm = config['max']
+					user_comm = parent_sub.ratelimit[username]
+					
+					if user_comm > max_comm:
+						remove_message = sub.ratelimit_config['remove_message']
+						if config['action'] == 'REMOVE':
+							if remove_message != None:
+								user.message('Your comment on /r/' + parent_sub.sub_name + ' has been automatically removed', ("\n\nSubreddit: " + parent_sub.sub_name + "\n\nPost: " + post.title + "\n\nComment Rate Limit: Over " + str(max_comm) + ' comments in under ' + str(config['interval']) + ' hours' + "\n\nComment: " + comment.body + "\n\n" + remove_message))
+							comment.mod.remove()
+						if config['action'] == 'SPAM':
+							comment.mod.remove(spam=True)
+		
 # Analyze a user's comments and posts and extract data from them
 def analyzeHistory(parent_sub, user):
 	# Data points
@@ -168,14 +195,14 @@ def analyzeHistory(parent_sub, user):
 				neg_comment_counter[abbrev] += 1
 
 			if cmnt_score >= parent_sub.QC_config['pos_karma']:
-				if parent_sub.QC_config['pos_words'] == None:
+				if parent_sub.QC_config['word_count'] == None:
 					pos_QC_counter[abbrev] += 1
-				elif word_count >= parent_sub.QC_config['pos_words']:
+				elif word_count >= parent_sub.QC_config['word_count']:
 					pos_QC_counter[abbrev] += 1
 			if cmnt_score <= parent_sub.QC_config['neg_karma']:
 				if parent_sub.QC_config['neg_words'] == None:
 					neg_QC_counter[abbrev] += 1
-				elif word_count <= parent_sub.QC_config['neg_words']:
+				elif any(word in comment.body for word in parent_sub.QC_config['neg_words']):
 					neg_QC_counter[abbrev] += 1
 
 	# Parse posts
@@ -210,9 +237,9 @@ def analyzeUsers(parent_sub, user_list):
 			user.fullname
 		except (prawcore.exceptions.NotFound, AttributeError):
 			continue
+			
 		username = str(user)
 		print ('\tAnalyzing user: ' + username)
-
 		user_info = analyzeHistory(parent_sub, user)
 
 		# Subreddit Progression
@@ -268,36 +295,7 @@ def analyzeUsers(parent_sub, user_list):
 							parent_sub.appendFlair(user, flairText + ' month old', None)
 						else:
 							parent_sub.appendFlair(user, flairText + ' months old', None)
-		"""
-		if parent_sub.main_config['ratelimit'] == True:
-			if parent_sub.ratelimit_config['COMMENTS']['metric'] != None:
-				config = parent_sub.ratelimit_config['COMMENTS']
-				if checkInfoTag(parent_sub, user_info, config):
-					comment_hist = user_info.comment_rate
-					max = config['max']
-					while len(comment_hist) > max:
-						comment = reddit.comment(id=comment_hist.pop[0])
-						author = comment.author
-						username = str(author)
-						post = comment.submission
-
-						message_info = config['comment_remove_message']
-						author.message(message_info[0], ("\n\nSubreddit: " + parent_sub.sub_name + "\n\nPost: " + post.title + "\n\nComment Rate Limit: Over " + str(max) + ' comments in under ' + str(config['interval']) + ' hours' + "\n\nComment: " + comment.body + "\n\n" + message_info[1]))
-						comment.mod.remove()
-			if parent_sub.ratelimit_config['SUBMISSIONS']['metric'] != None:
-				config = parent_sub.ratelimit_config['SUBMISSIONS']
-				if checkInfoTag(parent_sub, user_info, config):
-					post_hist = user_info.post_rate
-					max = config['max']
-					while len(post_hist) > max:
-						post = reddit.submission(id=post_hist.pop[0])
-						author = comment.author
-						username = str(author)
-
-						message_info = config['comment_remove_message']
-						author.message(message_info[0], ("\n\nSubreddit: " + parent_sub.sub_name + "\n\nPost: " + post.title + "\n\nComment Rate Limit: Over " + str(max) + ' comments in under ' + str(config['interval']) + ' hours' + "\n\n" + message_info[1]))
-						comment.mod.remove()
-		"""
+					
 	# Assign users' flair based on analysis
 	parent_sub.flairUsers()
 
@@ -324,7 +322,7 @@ def readPMs(sub_dict):
 			elif message_words[0] == '!flair':
 					if username in parent_sub.whitelist or username in parent_sub.mods:
 						new_flair = message.body[7:]
-						parent_sub.flairUser(author, new_flair)
+						parent_sub.flairUser(author, new_flair, '')
 						message.reply('Your flair has been set! It should now read:\n\n' + new_flair)
 						message.mark_read()
 						print ('Message resolved successfully')
@@ -332,10 +330,21 @@ def readPMs(sub_dict):
 						message.reply('You are not on the list of approved users for custom flair. If you feel that this is a mistake, please contact /u/shimmyjimmy97 or message the moderators.')
 						message.mark_read()
 						print ('Message resolved without action: User not approved for custom flair')
+						
+			elif message_words[0] == '!css':
+					if username in parent_sub.whitelist or username in parent_sub.mods:
+						css = message.body[5:]
+						text = next(sub.sub_obj.flair(author))['flair_text']
+						parent_sub.flairUser(author, text, css)
 
 			# Target username must be the second word listed
 			else:
-				target_username = message_words[1]
+				try:
+					target_username = message_words[1]
+				except IndexError:
+					message.reply('This command requires more than one argument. If you belive this message is in error, please contact /u/shimmyjimmy97')
+					message.mark_read()
+					continue
 				user = setUser(target_username)
 				if user == None:
 					message.reply("The user was not able to be accessed by InstaMod. This could be becasue they don't exist, are shadowbanned, or a server error. If you feel that this is a mistake, please contact /u/shimmyjimmy97.")
@@ -504,7 +513,7 @@ def checkInfoTag(parent_sub, user_info, config):
 
 	user_data = user_info.info_dict[metric]
 	total_value = 0
-	if 'total' in metric:
+	if 'total' in metric or metric == 'months old':
 		total_value = user_data
 	else:
 		for abbrev in sub_list:
@@ -539,16 +548,19 @@ if command == 'auto':
 			all_subs = reddit.subreddit(sub_str)
 			for comment in all_subs.stream.comments(pause_after=1):
 				current_time = datetime.now()
+				
 				if comment == None:
 					readPMs(sub_dict)
+					
+					tdelta = current_time - start_time
+					hour_delta = tdelta.seconds / 3600.0
+					if hour_delta >= 1:
+						for name, obj in sub_dict.items():
+							obj.updateSub(name)
+							print('Updated Sub: ' + name)
+							start_time = datetime.now()
 					continue
-				tdelta = current_time - start_time
-				hour_delta = tdelta.seconds / 3600.0
-				if hour_delta >= 1:
-					for name, obj in sub_dict.items():
-						obj.updateSub(name)
-						print('Updated Sub: ' + name)
-						start_time = datetime.now()
+				
 				else:
 					sortComment(sub_dict, comment)
 		except:

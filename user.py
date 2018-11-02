@@ -60,10 +60,15 @@ class User:
 		for sub in neg_QC_counter:
 			user_info.net_QC_counter[sub] -= neg_QC_counter[sub]
 		
+
+		tdelta = relativedelta.relativedelta(datetime.now(), user_info.date_created)
+		months_old = tdelta.months
+		
 		user_info.info_dict = {
 			'parent_sub' : parent_sub,
 			'username' : username,
 			'date created' : date_created,
+			'months old' : months_old,
 			'analysis time' : analysis_time,
 			'comment karma' : comment_karma_counter,
 			'post karma' : post_karma_counter,
