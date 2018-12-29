@@ -61,7 +61,7 @@ class User:
 			user_info.net_QC_counter[sub] -= neg_QC_counter[sub]
 		
 
-		tdelta = relativedelta.relativedelta(datetime.now(), user_info.date_created)
+		tdelta = relativedelta.relativedelta(datetime.now(), datetime.fromtimestamp(user_info.date_created))
 		months_old = tdelta.months
 		
 		user_info.info_dict = {

@@ -34,7 +34,7 @@ class Subreddit:
 	def __init__(sub, sub_name):
 		sub.updateSub(sub_name)
 		sub.start_interval = datetime.now()
-	
+
 	# Checks if the ratelimit dict needs to be cleared
 	def checkInterval(sub):
 		tdelta = datetime.now() - sub.time_created
@@ -50,22 +50,26 @@ class Subreddit:
 		print ('Users and corresponding flair:')
 		for username in sub.users_and_flair:
 			user = setUser(username)
-			new_flair = sub.users_and_flair[username]['text']
-			css = sub.users_and_flair[username]['css']
-			old_flair = next(sub.sub_obj.flair(user))['flair_text']
-			
-			if new_flair != old_flair:
+			if user not in sub.customflair:
+				new_flair = sub.users_and_flair[username]['text']
+				css = sub.users_and_flair[username]['css']
+
+				if css == None or css == '':
+					css = 'noflair'
+
 				sub_obj.flair.set(user, new_flair, css)
 				print ('\t' + username + ': ' + new_flair)
-			else:
-				print('\t' + username + ': Flair is unchanged')
 		sub.users_and_flair.clear()
 
 	# Flair one user from users_and_flair
 	def flairUser(sub, user, flair_text, css):
 		sub_obj = sub.sub_obj
-		sub_obj.flair.set(user, flair_text, css)
+		try:
+			sub_obj.flair.set(user, flair_text, css)
+		except praw.exceptions.APIException:
+			return False
 		print('Flaired user: ' + str(user) + '\tFlair: ' + flair_text + '\tCSS:' + css)
+		return True
 
 	# Concatonate flair with existing
 	def appendFlair(sub, user, new_flair, css):
@@ -85,16 +89,36 @@ class Subreddit:
 			whitelistDB = TinyDB(sub.sub_name + '/whitelist.json')
 			whitelistDB.insert({'username' : username})
 			sub.whitelist.append(username)
-			user.message('You have been granted custom flair permissions on /r/' + sub.sub_name, 'Your contributions to the community have granted you access to custom flair options. In order to apply your desired flair, please click on [this preformatted link.](https://www.reddit.com/message/compose?to=InstaMod&subject=!' + sub.sub_name + '&message=!flair+REPLACE+THIS+WITH+DESIRED+FLAIR+TEXT)\n\nThis link will likely not work on mobile. For assistance, please PM /u/shimmyjimmy97')
-			sub.sub_obj.flair.delete(username)
+			whitelist_pm = sub.pm_config['whitelist']
+			user.message(whitelist_pm['subject'], whitelist_pm['body'])
 			print (username + ' added to whitelist and notified')
+
+	# Add user to sub customflair list
+	def addCustomList(sub, username):
+		customflairDB = TinyDB(sub.sub_name + '/customflair.json')
+		customflairDB.insert({'username' : username})
+		sub.customflair.append(username)
+		print (username + ' added to customflair list')
 
 	# Add user to sub graylist
 	def addGraylist(sub, username):
 		graylistDB = TinyDB(sub.sub_name + '/graylist.json')
+		whitelistDB = TinyDB(sub.sub_name + '/whitelist.json')
+
 		graylistDB.insert({'username' : username})
+		whitelistDB.remove(find_stuff['username'] == username)
 		sub.graylist.append(username)
 		print (username + ' added to graylist')
+
+	# Add user to sub blacklist
+	def addBlacklist(sub, username):
+		blacklistDB = TinyDB(sub.sub_name + '/blacklist.json')
+		whitelistDB = TinyDB(sub.sub_name + '/whitelist.json')
+
+		blacklistDB.insert({'username' : username})
+		whitelistDB.remove(find_stuff['username'] == username)
+		sub.blacklist.append(username)
+		print (username + ' added to blacklist')
 
 	# Add a user to the expired list and database
 	def addExpired(sub, user):
@@ -149,7 +173,7 @@ class Subreddit:
 
 	# Check if user should be analyzed and if they are accessible
 	def checkUser(sub, user):
-		if user not in sub.whitelist and user not in sub.graylist and user not in sub.expired_users and str(user) not in sub.mods and user not in sub.current_users:
+		if user not in sub.customflair and user not in sub.graylist and user not in sub.expired_users and str(user) not in sub.mods and user not in sub.current_users:
 			try:
 				user.fullname
 			except (prawcore.exceptions.NotFound, AttributeError):
@@ -160,10 +184,8 @@ class Subreddit:
 	# Clear the expired database after the users are analyzed
 	def dropExpired(sub):
 		expiredDB = TinyDB(sub.sub_name + '/expired.json')
-		print(str(len(expiredDB)))
 		expiredDB.purge()
 		sub.expired_users.clear()
-		print('Expired user database was purged')
 
 	# Deletes all the contents of the user info database
 	def wipePM(sub):
@@ -176,7 +198,7 @@ class Subreddit:
 	def updateSub(sub, sub_name):
 		print('Updating ' + sub_name)
 		current_time = datetime.now()
-		
+
 		# Read current settings from wiki page
 		str_config = reddit.subreddit(sub_name).wiki['InstaModSettings'].content_md
 		sub_config = literal_eval(str_config)
@@ -189,6 +211,7 @@ class Subreddit:
 		sub.threadlock_config = sub_config['THREADLOCK_CONFIG']
 		sub.sublock_config = sub_config['SUBLOCK_CONFIG']
 		sub.ratelimit_config = sub_config['RATELIMIT_CONFIG']
+		sub.pm_config = sub_config['PM_CONFIG']
 
 		# Get subreddit lists
 		sub.A_subs = sub_config['A_SUBS']
@@ -198,7 +221,9 @@ class Subreddit:
 
 		# Create lists for user databases
 		sub.whitelist = []
+		sub.customflair = []
 		sub.graylist = []
+		sub.blacklist = []
 		sub.current_users = []
 		sub.expired_users = []
 		sub.users_and_flair = {}
@@ -219,7 +244,15 @@ class Subreddit:
 			if user != None:
 				sub.whitelist.append(user)
 		print ('\tRead ' + str(len(sub.whitelist)) + ' users from whitelist')
-	
+
+		# Read customflair
+		customflairDB = TinyDB(sub_name + '/customflair.json')
+		for username in customflairDB:
+			user = setUser(username['username'])
+			if user != None:
+				sub.customflair.append(user)
+		print ('\tRead ' + str(len(sub.customflair)) + ' users from customflair')
+
 		# Read graylist
 		graylistDB = TinyDB(sub_name + '/graylist.json')
 		for username in graylistDB:
@@ -227,6 +260,14 @@ class Subreddit:
 			if user != None:
 				sub.graylist.append(user)
 		print ('\tRead ' + str(len(sub.graylist)) + ' users from greylist')
+
+		# Read blacklist
+		blacklistDB = TinyDB(sub_name + '/blacklist.json')
+		for username in blacklistDB:
+			user = setUser(username['username'])
+			if user != None:
+				sub.blacklist.append(user)
+		print ('\tRead ' + str(len(sub.blacklist)) + ' users from blacklist')
 
 		# Read current users
 		currentDB = TinyDB(sub_name + '/userInfo.json')
