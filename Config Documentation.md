@@ -1,4 +1,3 @@
------
 # Configuration File Documentation
 Here I will describe each element of the provided config file, list the possible options for each setting, and provide some example cases. If you want to jump to the interesting bits, please see the "Defining a rule" section. But it mighttttt not make a ton of sense
 
@@ -7,6 +6,10 @@ Here I will describe each element of the provided config file, list the possible
 * **Quotation marks are key** - Everything except numbers, True/False, and None should be encased in either ' or ". It doesn't matter what you choose, as long as the opening quotation mark matches the closing one.\
 * **Case sensitive** - Be sure what you add for certain sections, such as permissions, matches the correct case. Some things use all upper case, other use all lower case. Some contain spaces, and other use underscores instead. I will work on making this more consistent in future updates.
 * **Commas** - The end of each line in a section or subsection should contain a comma. The exception to this rule is the last line of each section or subsection. So if you add a new line, and it's not the last line, throw a comma in there at the end. This one is tricky if you aren't familiar with coding syntax, but in general, just follow the pattern of the existing settings and you should be fine.
+
+-----
+
+[Jump to Defining a Rule](
 
 ### SUB_CONFIG: Primary settings for toggling on/off features, as well as other meta options
 * **name** - Name of the subreddit InstaMod is running on
@@ -22,6 +25,7 @@ Here I will describe each element of the provided config file, list the possible
 Comments with values >= both of these numbers count as 1 positive QC
 * **positive karma** - comments must have a score thats >= this number
 * **positive words** - comments must contain an amount of words >= this number
+
 Comments with values <= both of these numbers count as 1 negative QC
 * **negative karma** - comments must have a score thats <= this number
 * **negative words** - comments must contain an amount of words <= this number
@@ -32,7 +36,7 @@ Each term must be used inbetween '' and typed the same way
 ### metric: user data used for rule definition
 * **total comment karma**, **total post karma**, **total karma** - Self explanatory. These values are for across all subreddits and will ignore the 'target_sub' rule setting. They will not be totaled like other data points.
 * **comment karma** and **post karma** - Total comment/post karma by subreddit
- **positive comment** and **negative comment** - Count of comments with a score < 0 or > 0 by subreddit
+* **positive comment** and **negative comment** - Count of comments with a score < 0 or > 0 by subreddit
 * **positive post** and **negative post** - Count of posts with a score < 0 or > 0 by subreddit
 * **positive QC**, **negative QC**, **net QC** - The number of QC by subreddit. net_QC_counter consists of the negative QC subtracted from the positive QC by subreddit
 
