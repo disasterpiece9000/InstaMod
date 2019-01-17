@@ -9,7 +9,9 @@ Here I will describe each element of the provided config file, list the possible
 
 -----
 
-[Jump to Defining a Rule](https://github.com/disasterpiece9000/InstaMod/blob/master/Config%20Documentation.md#defining-a-rule)
+## [Jump to Defining a Rule](https://github.com/disasterpiece9000/InstaMod/blob/master/Config%20Documentation.md#defining-a-rule)
+
+-----
 
 ### SUB_CONFIG: Primary settings for toggling on/off features, as well as other meta options
 * **name** - Name of the subreddit InstaMod is running on
