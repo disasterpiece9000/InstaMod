@@ -223,8 +223,7 @@ class Subreddit:
         # Get subreddit lists
         sub.A_subs = sub_config['A_SUBS']
         sub.B_subs = sub_config['B_SUBS']
-        sub.all_subs = sub_config['B_SUBS']
-        sub.all_subs.update(sub.A_subs)
+        sub.all_subs = {**sub.A_subs, **sub.B_subs}
 
         # Create lists for user databases
         sub.whitelist = []

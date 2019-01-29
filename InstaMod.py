@@ -565,7 +565,7 @@ def getSubTag(parent_sub, user_info, config):
 
     if sort == 'MOST_COMMON':
         tag_count = 0
-        for sub in user_data.most_common(5):
+        for sub in user_data.most_common():
             if tag_count >= tag_cap:
                 break
             abbrev = sub[0]
@@ -574,8 +574,6 @@ def getSubTag(parent_sub, user_info, config):
                 if checkComparison(comparison, data, value):
                     hold_subs.append(abbrev)
                     tag_count += 1
-            else:
-                print('Sub not in sub list')
         return hold_subs
     if sort == 'LEAST_COMMON':
         tag_count = 0
@@ -589,8 +587,6 @@ def getSubTag(parent_sub, user_info, config):
                 if checkComparison(comparison, data, value):
                     hold_subs.append(sub[0])
                     tag_count += 1
-            else:
-                print('Sub not in list')
         return hold_subs
 
 # Check user info agaisnt sub rule
