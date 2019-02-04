@@ -67,8 +67,8 @@ def sortComment(sub_dict, comment):
 
 	# Sorts user for instant analysis or expired flair
 	if parent_sub.checkUser(user) == True:
-		print('Found comment from User: '
-			  + username + '\tSubreddit: ' + str(sub))
+		print('Found comment from User: ' + username + '\tSubreddit: ' + str(sub))
+
 		flair = next(parent_sub.sub_obj.flair(user))['flair_text']
 		if flair != '' and flair != None:
 			parent_sub.addExpired(user)
@@ -91,8 +91,7 @@ def sortComment(sub_dict, comment):
 
 	# If update interval is set to a number, check if the expired users list is over that number
 	elif len(parent_sub.expired_users) > update_interval:
-		print('\nAnalyzing all users in expired list: ' +
-			  str(len(parent_sub.expired_users)) + '\n')
+		print('\nAnalyzing all users in expired list: ' + str(len(parent_sub.expired_users)) + '\n')
 		analyzeUsers(parent_sub, parent_sub.expired_users)
 		parent_sub.dropExpired()
 
@@ -102,23 +101,27 @@ def sortComment(sub_dict, comment):
 	# Check comment for Thread Lock
 	if parent_sub.main_config['thread_lock'] == True:
 		if post_flair != None:
+			# Check if the post is locked
 			lock_status = checkThreadLock(parent_sub, post.link_flair_text)
 			if lock_status != None:
 				user_info = parent_sub.getUserInfo(username)
 
+				# If the user is present in the database and doesn't meet the requirements, remove the comment
 				if user_info != None and handelThreadLock(parent_sub, lock_status, user_info):
 					lock_type = parent_sub.threadlock_config[lock_status]
 					action = lock_type['action']
 
+					# Delete the comment
 					if action == 'REMOVE':
 						message_info = parent_sub.threadlock_config['remove_message']
 						if message_info != None:
 							user.message(message_info[0], ("\n\nSubreddit: " + parent_sub.sub_name + "\n\nPost: "
-							+ post.title + "\n\nLock Type: " + lock_type['flair_ID'] + "\n\nComment: "
-														   + comment.body + "\n\n" + message_info[1]))
-
+										+ post.title + "\n\nLock Type: " + lock_type['flair_ID'] + "\n\nComment: "
+										+ comment.body + "\n\n" + message_info[1]))
 							comment.mod.remove()
 							print('Comment removed and user notified')
+
+					# Mark the comment as spam
 					elif action == 'SPAM':
 						comment.mod.remove(spam=True)
 
@@ -126,22 +129,27 @@ def sortComment(sub_dict, comment):
 	if parent_sub.main_config['sub_lock'] == True:
 		if user_info == None:
 			user_info = parent_sub.getUserInfo(username)
+
+		# If the user is present in the database, check if they meet the requirements to comment
 		if user_info != None:
 			user_locked = handelSubLock(parent_sub, user_info)
 
-			if user_locked != False:
+			# If the user doesn't meet the requirements, remove the comment
+			if user_locked == True:
 				lock_type = parent_sub.sublock_config[user_locked]
 				action = lock_type['action']
 
+				# Delete the comment
 				if action == 'REMOVE':
 					message_info = parent_sub.threadlock_config['remove_message']
 					if message_info != None:
 						user.message(message_info[0], ("\n\nSubreddit: " + parent_sub.sub_name + "\n\nPost: "
-						+ post.title + "\n\nLock Type: " + lock_type['lock_ID'] + "\n\nComment: " + comment.body
-													   + "\n\n" + message_info[1]))
-
+									+ post.title + "\n\nLock Type: " + lock_type['lock_ID'] + "\n\nComment: " + comment.body
+									+ "\n\n" + message_info[1]))
 						comment.mod.remove()
 						print('Comment removed and user notified')
+
+				# Mark the comment as spam
 				elif action == 'SPAM':
 					comment.mod.remove(spam=True)
 
@@ -162,8 +170,9 @@ def sortComment(sub_dict, comment):
 							if remove_message != None:
 								user.message('Your comment on /r/' + parent_sub.sub_name + ' has been automatically removed',
 											 ("\n\nSubreddit: " + parent_sub.sub_name + "\n\nPost: " + post.title +
-											  "\n\nComment Rate Limit: Over " + str(max_comm) + ' comments in under ' + str(config['interval'])
-											  + ' hours' + "\n\nComment: " + comment.body + "\n\n" + remove_message))
+											  "\n\nComment Rate Limit: Over " + str(max_comm) + ' comments in under ' +
+											  str(config['interval'])+ ' hours' + "\n\nComment: " + comment.body +
+											  "\n\n" + remove_message))
 
 							comment.mod.remove()
 						if config['action'] == 'SPAM':
@@ -196,9 +205,11 @@ def analyzeHistory(parent_sub, user):
 		word_count = countWords(comment.body)
 		abbrev = None
 
+		# Get the subs abbreviation
 		if sub_name.upper() in parent_sub.all_subs:
 			abbrev = parent_sub.all_subs[sub_name.upper()]
 
+		# If the subreddit is in A_SUBS or B_SUBS then store data on the comment
 		if abbrev != None:
 			comment_karma_counter[abbrev] += cmnt_score
 			if cmnt_score > 0:
@@ -211,9 +222,11 @@ def analyzeHistory(parent_sub, user):
 					pos_QC_counter[abbrev] += 1
 				elif word_count >= parent_sub.QC_config['word_count']:
 					pos_QC_counter[abbrev] += 1
+
 			if cmnt_score <= parent_sub.QC_config['neg_karma']:
 				if parent_sub.QC_config['neg_words'] == None:
 					neg_QC_counter[abbrev] += 1
+				# Check comment for blacklisted words
 				elif any(word.lower() in comment.body.lower() for word in parent_sub.QC_config['neg_words']):
 					neg_QC_counter[abbrev] += 1
 
@@ -224,23 +237,24 @@ def analyzeHistory(parent_sub, user):
 		post_score = post.score
 		abbrev = None
 
-		if sub_name in parent_sub.A_subs:
-			abbrev = parent_sub.A_subs[sub_name.upper()]
-		elif sub_name in parent_sub.B_subs:
-			abbrev = parent_sub.B_subs[sub_name.upper()]
+		# Get the subs abbreviation
+		if sub_name.upper() in parent_sub.all_subs:
+			abbrev = parent_sub.all_subs[sub_name.upper()]
 
 		if abbrev != None:
 			post_karma_counter[abbrev] += cmnt_score
 
 			if post_score > 0:
-				pos_comment_counter[abbrev] += 1
+				pos_post_counter[abbrev] += 1
 			elif post_score < 0:
-				neg_comment_counter[abbrev] += 1
+				neg_post_counter[abbrev] += 1
 	# Return user info
-	return parent_sub.makeUser(user, username, date_created, analysis_time, total_comment_karma, total_post_karma, total_karma, comment_karma_counter, post_karma_counter, pos_comment_counter, neg_comment_counter, pos_post_counter, neg_post_counter, pos_QC_counter, neg_QC_counter)
+	return parent_sub.makeUser(user, username, date_created, analysis_time, total_comment_karma, total_post_karma,
+								total_karma, comment_karma_counter, post_karma_counter, pos_comment_counter,
+								neg_comment_counter, pos_post_counter, neg_post_counter, pos_QC_counter, neg_QC_counter)
 
 
-# Get users' history and process data based on info
+# Get users' history and process data based on settings
 def analyzeUsers(parent_sub, user_list):
 	current_time = datetime.now()
 
@@ -263,6 +277,7 @@ def analyzeUsers(parent_sub, user_list):
 					flair_css = config['flair_css']
 					permissions = config['permissions']
 
+					# Add text to their flair and give permissions
 					parent_sub.appendFlair(user, flair_text, flair_css)
 					if permissions == 'CUSTOM_FLAIR' and username not in parent_sub.blacklist and username not in parent_sub.whitelist:
 						parent_sub.addWhitelist(username)
@@ -279,14 +294,14 @@ def analyzeUsers(parent_sub, user_list):
 			# Check info against each tag's rule
 			for tag, config in parent_sub.subtag_config.items():
 				if tag.startswith('subtag'):
+					# Get a list of subs that the user should be tagged for
 					hold_subs = getSubTag(parent_sub, user_info, config)
 					pre_text = config['pre_text']
 
 					for sub in hold_subs:
 						post_text = ''
 						if config['show_value'] == True:
-							post_text += ' ' + \
-								str(user_info.info_dict[config['metric']][sub])
+							post_text += ' ' + str(user_info.info_dict[config['metric']][sub])
 						post_text += config['post_text'] + ', '
 						sub_tags += (pre_text + sub + post_text)
 						used = True
@@ -296,11 +311,12 @@ def analyzeUsers(parent_sub, user_list):
 
 		# Account Age Tag
 		if parent_sub.main_config['accnt_age'] != False:
+			# Calculate the user's account age
 			userCreated = user_info.date_created
-			tdelta = relativedelta.relativedelta(
-				datetime.now(), datetime.fromtimestamp(user_info.date_created))
+			tdelta = relativedelta.relativedelta(datetime.now(), datetime.fromtimestamp(user_info.date_created))
+
 			if tdelta.months <= parent_sub.main_config['accnt_age']:
-				# create flair with appropriate time breakdown
+				# Create flair with appropriate time breakdown
 				if tdelta.years < 1:
 					if tdelta.months < 1:
 						days = tdelta.days
@@ -339,13 +355,14 @@ def readPMs(sub_dict):
 		except IndexError:
 			command = ''
 
+		# Check if the target sub is valid
 		if target_sub in sub_dict:
 			parent_sub = sub_dict[target_sub]
 			message_lines = message.body.splitlines()
 
+			# Wipe the database
 			if message.body == "!wipe" and username in parent_sub.mods:
-				print('Message accepted: ' + message.body
-					  + '\tSubreddit: ' + target_sub)
+				print('Message accepted: ' + message.body + '\tSubreddit: ' + target_sub)
 				parent_sub.wipePM()
 				message.reply('The user database has been wiped successfully')
 				message.mark_read()
@@ -354,8 +371,8 @@ def readPMs(sub_dict):
 			# Custom Flair
 			elif command == '!flair':
 				if username in parent_sub.whitelist or username in parent_sub.mods or username == 'shimmyjimmy97':
-					print('Message accepted: ' + message.body
-						  + '\tSubreddit: ' + target_sub)
+					print('Message accepted: ' + message.body + '\tSubreddit: ' + target_sub)
+					# Read 2 lines from PM to get text and CSS
 					new_flair = message_lines[0]
 					new_css = ''
 					try:
@@ -368,8 +385,8 @@ def readPMs(sub_dict):
 						except IndexError:
 							new_css = ''
 
-					was_flaired = parent_sub.flairUser(
-						author, new_flair, new_css)
+					# Check if the flair was successfully assigned
+					was_flaired = parent_sub.flairUser(author, new_flair, new_css)
 					if was_flaired == True:
 						message.reply('Your flair has been set! It should now read:\n\n' + new_flair
 									  + '\n\nYour flair CSS is: ' + new_css)
@@ -378,6 +395,7 @@ def readPMs(sub_dict):
 							parent_sub.addCustomList(username)
 						message.mark_read()
 						print('Message resolved successfully')
+
 					else:
 						message.reply("There was an error while processing your flair. Please be sure "
 						+ "that the link flair you selected was in the provided list. The preformatted "
@@ -385,45 +403,51 @@ def readPMs(sub_dict):
 						message.mark_read()
 						print(
 							'Message not resolved successfully: Incorrect CSS field ')
+
+				# Continue here
 				else:
 					message.reply('You are not on the list of approved users for custom flair. '
 								  + 'If you feel that this is a mistake, please contact /u/shimmyjimmy97 or message the moderators.')
 
 					message.mark_read()
-					print(
-						'Message resolved without action: User not approved for custom flair')
+					print('Message resolved without action: User not approved for custom flair')
 
+			# Custom CSS
 			elif command == '!css':
 				if username in parent_sub.whitelist or username in parent_sub.mods:
-					print('Message accepted: ' + message.body
-						  + '\tSubreddit: ' + target_sub)
+					print('Message accepted: ' + message.body + '\tSubreddit: ' + target_sub)
 					css = message.body[5:]
 					text = next(sub.sub_obj.flair(author))['flair_text']
 					parent_sub.flairUser(author, text, css)
 
-			# Target username must be the second word listed
+			# These commands require that the target username be the second word listed
 			else:
 				try:
 					target_username = message_lines[0]
 				except IndexError:
-					message.reply(
-						'This command requires more than one argument. If you belive this message is in error, please contact /u/shimmyjimmy97')
+					message.reply('This command requires more than one argument. If you belive this message is in error, '
+									+ 'please contact /u/shimmyjimmy97')
 					message.mark_read()
 					continue
+
+				# Get user and make sure they are accessible
 				user = setUser(target_username)
 				if user == None:
 					message.reply("The user was not able to be accessed by InstaMod. This could be becasue they don't exist, "
-								  + "are shadowbanned, or a server error occured. If you feel that this is a mistake, please contact /u/shimmyjimmy97.")
+								  + "are shadowbanned, or a server error occured. If you feel that this is a mistake, "
+								  + "please contact /u/shimmyjimmy97.")
 					message.mark_read()
 					print('Message resolved without action: Target user not accessible')
+
 				# Whitelist
 				elif command == "!whitelist":
 					if str(user) not in parent_sub.whitelist:
 						print('Message accepted: ' + message.body
 							  + '\tSubreddit: ' + target_sub)
 						parent_sub.addWhitelist(target_username)
-						message.reply('The user: ' + target_username + ' has been added to the whitelist and will no longer recieve new flair.'
-									  + ' They are also now eligible for custom flair. The user will be notified of their whitelisted status now.')
+						message.reply('The user: ' + target_username + ' has been added to the whitelist and will no longer recieve '
+									  + 'new flair. They are also now eligible for custom flair. The user will be notified of their '
+									  + 'whitelisted status now.')
 
 						message.mark_read()
 
