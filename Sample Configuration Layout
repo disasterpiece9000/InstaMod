@@ -12,7 +12,7 @@
 		'accnt_age' : 6,
 		'update_interval' : 250,
 		'approved_icons' : ()
-	}, 
+	},
 
 	'QC_CONFIG' : {
 		# Comments with values >= both of these numbers count as 1 positive QC
@@ -25,37 +25,37 @@
 	},
 
 	'PROGRESS_CONFIG' : {
-	
-		'tier1' : {'metric' : 'positive comments', 
-					'target_subs' : ('A_SUBS'), 
-					'comparison' : 'LESS_THAN_EQUAL_TO', 
-					'value' : 20, 
-					'flair_text' : 'New to Crypto', 
-					'flair_css' : None, 
+
+		'tier1' : {'metric' : 'positive comments',
+					'target_subs' : ('A_SUBS'),
+					'comparison' : 'LESS_THAN_EQUAL_TO',
+					'value' : 20,
+					'flair_text' : 'New to Crypto',
+					'flair_css' : None,
 					'permissions' : None},
-				
-		'tier2' : {'metric' : 'positive comments', 
-					'target_subs' : ('A_SUBS'), 
-					'comparison' : 'LESS_THAN_EQUAL_TO', 
-					'value' : 50, 
-					'flair_text' : 'Crypto Nerd', 
-					'flair_css' : None, 
+
+		'tier2' : {'metric' : 'positive comments',
+					'target_subs' : ('A_SUBS'),
+					'comparison' : 'LESS_THAN_EQUAL_TO',
+					'value' : 50,
+					'flair_text' : 'Crypto Nerd',
+					'flair_css' : None,
 					'permissions' : None},
-				
-		'tier3' : {'metric' : 'positive comments', 
-					'target_subs' : ('A_SUBS'), 
-					'comparison' : 'LESS_THAN_EQUAL_TO', 
-					'value' : 100, 
-					'flair_text' : 'Crypto Expert', 
-					'flair_css' : None, 
+
+		'tier3' : {'metric' : 'positive comments',
+					'target_subs' : ('A_SUBS'),
+					'comparison' : 'LESS_THAN_EQUAL_TO',
+					'value' : 100,
+					'flair_text' : 'Crypto Expert',
+					'flair_css' : None,
 					'permissions' : None},
-				
-		'tier4' : {'metric' : 'ELSE', 
-					'target_subs' : (None), 
-					'comparison' : None, 
-					'value' : None, 
-					'flair_text' : 'Crypto God', 
-					'flair_css' : None, 
+
+		'tier4' : {'metric' : 'ELSE',
+					'target_subs' : (None),
+					'comparison' : None,
+					'value' : None,
+					'flair_text' : 'Crypto God',
+					'flair_css' : None,
 					'permissions' : None}
 	},
 
@@ -65,25 +65,25 @@
 	# Results can be soted in order from highest to lowest (MOST_COMMON) or lowest to highest (LEAST_COMMON)
 	# The number of subreddits listed can be capped using the tag_cap setting
 	'SUBTAG_CONFIG' : {
-		'subtag1' : {'metric' : 'net QC', 
-					'target_subs' : ('A_SUBS'), 
-					'sort' : 'MOST_COMMON', 
-					'tag_cap' : 3, 
-					'comparison' : 'GREATER_THAN_EQUAL_TO', 
-					'value' : 15, 
-					'pre_text' : 'r/', 
+		'subtag1' : {'metric' : 'net QC',
+					'target_subs' : ('A_SUBS'),
+					'sort' : 'MOST_COMMON',
+					'tag_cap' : 3,
+					'comparison' : 'GREATER_THAN_EQUAL_TO',
+					'value' : 15,
+					'pre_text' : 'r/',
 					'post_text' : ''},
-				
-		'subtag2' : {'metric' : 'net QC', 
-					'target_subs' : ('A_SUBS'), 
-					'sort' : 'LEAST_COMMON', 
-					'tag_cap' : 3, 
-					'comparison' : 'LESS_THAN_EQUAL_TO', 
-					'value' : -10, 
-					'pre_text' : 'Trolls r/', 
+
+		'subtag2' : {'metric' : 'net QC',
+					'target_subs' : ('A_SUBS'),
+					'sort' : 'LEAST_COMMON',
+					'tag_cap' : 3,
+					'comparison' : 'LESS_THAN_EQUAL_TO',
+					'value' : -10,
+					'pre_text' : 'Trolls r/',
 					'post_text' : ''}
 	},
-					
+
 
 # Advanced Thread Locking
 # Unique characteristics:
@@ -92,27 +92,27 @@
 		# REMOVE - remove the comment and PM the user with remove_message
 		# SPAM - mark the comment as spam and do not notify the user
 	'THREADLOCK_CONFIG' : {
-		'threadlock1' : {'metric' : 'positive comments', 
-						'target_subs' : ('CM'), 
-						'comparison' : 'LESS_THAN_EQUAL_TO', 
-						'value' : 20, 
-						'flair_ID' : 'lvl 1 Lock', 
+		'threadlock1' : {'metric' : 'positive comments',
+						'target_subs' : ('CM'),
+						'comparison' : 'LESS_THAN_EQUAL_TO',
+						'value' : 20,
+						'flair_ID' : 'lvl 1 Lock',
 						'action' : 'REMOVE'},
-					
-		'threadlock2' : {'metric' : 'positive comments', 
-						'target_subs' : ('CM'), 
-						'comparison' : 'LESS_THAN_EQUAL_TO', 
-						'value' : 50, 
-						'flair_ID' : 'lvl 2 Lock', 
+
+		'threadlock2' : {'metric' : 'positive comments',
+						'target_subs' : ('CM'),
+						'comparison' : 'LESS_THAN_EQUAL_TO',
+						'value' : 50,
+						'flair_ID' : 'lvl 2 Lock',
 						'action' : 'REMOVE'},
-					
-		'threadlock3' : {'metric' : 'positive comments', 
-						'target_subs' : ('CM'), 
-						'comparison' : 'LESS_THAN_EQUAL_TO', 
-						'value' : 100, 
-						'flair_ID' : 'lvl 3 Lock', 
+
+		'threadlock3' : {'metric' : 'positive comments',
+						'target_subs' : ('CM'),
+						'comparison' : 'LESS_THAN_EQUAL_TO',
+						'value' : 100,
+						'flair_ID' : 'lvl 3 Lock',
 						'action' : 'REMOVE'},
-	
+
 		'remove_message' : ('Automatic comment removal notice', 'Your account is not approved to post in this locked thread. If you have any questions, comments, or concerns, please message the moderators. This is an automated message.')
 	},
 
@@ -120,12 +120,12 @@
 # Unique characteristics:
 	# This set of rules are applied to all comments on the subreddit. A SubLock can be activated and deactivated by PMing the bot
 	'SUBLOCK_CONFIG' : {
-		'sublock1' : {'metric' : 'parent_QC', 
-						'comparison' : 'LESS_THAN_EQUAL_TO', 
-						'value' : 20, 
-						'lock_ID' : 'SUBLOCK 1', 
+		'sublock1' : {'metric' : 'parent_QC',
+						'comparison' : 'LESS_THAN_EQUAL_TO',
+						'value' : 20,
+						'lock_ID' : 'SUBLOCK 1',
 						'action' : 'SPAM'},
-	
+
 		'remove_message' : None
 	},
 
@@ -246,7 +246,7 @@
 		'ETHERDELTA' : 'EtherDelta',
 		'NUBITS' : 'NBT',
 		'ANTSHARES' : 'NEO'
-	},	
+	},
 
 # Another list of subreddits
 	'B_SUBS' : {
