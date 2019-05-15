@@ -1,23 +1,29 @@
 from datetime import datetime
 from configparser import ConfigParser
-import praw
 
 
 class Subreddit:
     def __init__(self, sub_name, r):
         self.r = r
         self.sub_name = sub_name
+        self.sub = r.subreddit(sub_name)
         self.start_interval = datetime.now()
         
         # Read config file from wiki page
         config = ConfigParser(allow_no_value=True)
-        config.read_string(self.r.subreddit(self.sub_name).wiki["InstaModSettings"].content_md)
+        config.read_string(self.sub.wiki["InstaModTest"].content_md)
         self.main_config = config["MAIN CONFIG"]
+        print(self.main_config)
         self.flair_config = config["FLAIR"]
+        print(self.flair_config)
         self.qc_config = config["QUALITY COMMENTS"]
+        print(self.qc_config)
         self.progression_tiers = self.load_nested_config("PROGRESSION TIER", config)
+        print(self.progression_tiers)
         self.sub_activity = self.load_nested_config("SUB ACTIVITY", config)
+        print(self.sub_activity)
         self.sub_groups = self.load_nested_config("SUB GROUP", config)
+        print(self.sub_groups)
     
     @staticmethod
     def load_nested_config(main_name, config):
