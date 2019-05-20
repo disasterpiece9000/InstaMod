@@ -1,4 +1,5 @@
 import praw
+from psaw import PushshiftAPI
 from queue import Queue
 import threading
 from Subreddit import Subreddit
@@ -13,7 +14,8 @@ comment_queue = Queue()
 # Lock for shared resources
 lock = threading.Lock()
 # Thread for processing comments
-process_thread = threading.Thread(target=ProcessComment.fetch_queue, args=(comment_queue, lock, sub_list))
+process_thread = threading.Thread(target=ProcessComment.fetch_queue,
+                                  args=(r, comment_queue, lock, sub_list))
 
 # Make multi-sub for subreddit stream
 sub_str = ""

@@ -1,7 +1,10 @@
 import ScrapeData
+from psaw import PushshiftAPI
 
 
-def fetch_queue(q, lock, sub_list):
+def fetch_queue(r, q, lock, sub_list):
+    ps = PushshiftAPI()
+    
     for sub in sub_list:
         sub.make_db()
         
@@ -18,4 +21,4 @@ def fetch_queue(q, lock, sub_list):
                 target_sub = sub
                 break
         if target_sub is not None:
-            ScrapeData.get_data(comment, target_sub)
+            ScrapeData.get_data(comment, target_sub, ps)
