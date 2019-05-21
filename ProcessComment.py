@@ -12,7 +12,6 @@ def fetch_queue(r, q, lock, sub_list):
     while True:
         comment = q.get()
         q.task_done()
-        print(str(comment.author))
         
         # Find sub that the comment was placed in
         target_sub = None

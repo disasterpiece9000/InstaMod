@@ -30,7 +30,7 @@ class Database:
     KEY2_POST_KARMA = "post_karma"
     KEY2_COMMENT_KARMA = "comment_karma"
     CREATE_ACCNT_HISTORY = ("CREATE TABLE IF NOT EXISTS " + TABLE_ACCNT_HISTORY + " (" +
-                            KEY2_USERNAME + " TEXT PRIMARY KEY, " + KEY2_SUB_NAME + " TEXT, " +
+                            KEY2_USERNAME + " TEXT, " + KEY2_SUB_NAME + " TEXT, " +
                             KEY2_POSITIVE_POSTS + " INTEGER, " + KEY2_NEGATIVE_POSTS + " INTEGER, " +
                             KEY2_POSITIVE_COMMENTS + " INTEGER, " + KEY2_NEGATIVE_COMMENTS + " INTEGER, " +
                             KEY2_POSITIVE_QC + " INTEGER, " + KEY2_NEGATIVE_QC + " INTEGER, " +
@@ -50,7 +50,7 @@ class Database:
                       + " WHERE " + self.KEY1_USERNAME + " = ?")
         
         exists = False
-        for row in cur.execute(select_str, (username,)):
+        for _ in cur.execute(select_str, (username,)):
             exists = True
             break
             
@@ -60,12 +60,6 @@ class Database:
     def insert_info(self, username, created, ratelimit_start, ratelimit_count, total_post_karma,
                     total_comment_karma, flair_txt, last_scraped):
     
-        print("\nInserted user into accnt_info: " + username)
-        print("Created: " + str(created))
-        print("Ratelimit Start: " + str(ratelimit_start))
-        print("Ratelimit Count: " + str(ratelimit_count))
-        print("Total Post Karma: " + str(total_post_karma))
-        print("Total Comment Karma: " + str(total_comment_karma))
         if flair_txt is not None:
             print("Flair Text: " + flair_txt)
         else:
@@ -84,12 +78,85 @@ class Database:
                     total_comment_karma, flair_txt, last_scraped))
         self.conn.commit()
         cur.close()
+        print("Done inserting into accnt_info\n")
+        
+    def update_info(self, username, ratelimit_start, ratelimit_count, total_post_karma,
+                    total_comment_karma, flair_txt, last_scraped):
+        
+        cur = self.conn.cursor()
+        update_str = ("UPDATE " + self.TABLE_ACCNT_INFO
+                      + " SET " + self.KEY1_RATELIMIT_START + " = ?, " + self.KEY1_RATELIMIT_COUNT + " = ?, "
+                      + self.KEY1_POST_KARMA + " = ?, " + self.KEY1_COMMENT_KARMA + " = ?, "
+                      + self.KEY1_FLAIR_TEXT + " = ?, " + self.KEY1_LAST_SCRAPED + " = ? "
+                      + "WHERE " + self.KEY1_USERNAME + " = ?")
+        
+        cur.execute(update_str, (ratelimit_start, ratelimit_count, total_post_karma,
+                                 total_comment_karma, flair_txt, last_scraped, username))
+        self.conn.commit()
+        cur.close()
+        print("Done updating accnt_info\n")
+        
+    def insert_activity(self, username, sub_comment_karma, sub_pos_comments, sub_neg_comments, sub_pos_qc, sub_neg_qc,
+                        sub_post_karma, sub_pos_posts, sub_neg_posts):
+        
+        cur = self.conn.cursor()
+        insert_str = ("INSERT INTO " + self.TABLE_ACCNT_HISTORY + "("
+                      + self.KEY2_USERNAME + ", " + self.KEY2_SUB_NAME + ", "
+                      + self.KEY2_POSITIVE_POSTS + ", " + self.KEY2_NEGATIVE_POSTS + ", "
+                      + self.KEY2_POSITIVE_COMMENTS + ", " + self.KEY2_NEGATIVE_COMMENTS + ", "
+                      + self.KEY2_POSITIVE_QC + ", " + self.KEY2_NEGATIVE_QC + ", "
+                      + self.KEY2_POST_KARMA + ", " + self.KEY2_COMMENT_KARMA + ") "
+                      + "VALUES(?,?,?,?,?,?,?,?,?,?)")
+        
+        # Union of all keys in both primary dictionaries
+        all_subs = sub_comment_karma.keys() | sub_post_karma
+        for sub in all_subs:
+            cur.execute(insert_str, (username, sub, sub_pos_posts[sub], sub_neg_posts[sub],
+                                     sub_pos_comments[sub], sub_neg_comments[sub],
+                                     sub_pos_qc[sub], sub_neg_qc[sub],
+                                     sub_post_karma[sub], sub_comment_karma[sub]))
+            self.conn.commit()
+        cur.close()
+        print("Done inserting into accnt_activity\n")
+        
+    def update_activity(self, username, sub_comment_karma, sub_pos_comments, sub_neg_comments, sub_pos_qc, sub_neg_qc,
+                        sub_post_karma, sub_pos_posts, sub_neg_posts):
+        
+        cur = self.conn.cursor()
+        update_str = ("UPDATE " + self.TABLE_ACCNT_HISTORY + " SET "
+                      + self.KEY2_COMMENT_KARMA + " = " + self.KEY2_COMMENT_KARMA + "+ ?, "
+                      + self.KEY2_POSITIVE_COMMENTS + " = " + self.KEY2_POSITIVE_COMMENTS + "+ ?, "
+                      + self.KEY2_NEGATIVE_COMMENTS + " = " + self.KEY2_NEGATIVE_COMMENTS + "+ ?, "
+                      + self.KEY2_POSITIVE_QC + " = " + self.KEY2_POSITIVE_QC + "+ ?, "
+                      + self.KEY2_NEGATIVE_QC + " = " + self.KEY2_NEGATIVE_QC + "+ ?, "
+                      + self.KEY2_POST_KARMA + " = " + self.KEY2_POST_KARMA + "+ ?, "
+                      + self.KEY2_POSITIVE_POSTS + " = " + self.KEY2_POSITIVE_POSTS + "+ ?, "
+                      + self.KEY2_NEGATIVE_POSTS + " = " + self.KEY2_NEGATIVE_POSTS + "+ ? "
+                      + "WHERE " + self.KEY2_USERNAME + " = ?")
+
+        # Union of all keys in both primary dictionaries
+        all_subs = sub_comment_karma.keys() | sub_post_karma
+        for sub in all_subs:
+            cur.execute(update_str, (sub_comment_karma[sub], sub_pos_comments[sub], sub_neg_comments[sub],
+                                     sub_pos_qc[sub], sub_neg_qc[sub], sub_post_karma[sub],
+                                     sub_pos_posts[sub], sub_neg_posts[sub], username))
+            self.conn.commit()
+        cur.close()
+        print("Done updating accnt_activity\n")
+        
+    def get_last_scraped(self, username):
+        cur = self.conn.cursor()
+        select_str = ("SELECT " + self.KEY1_LAST_SCRAPED + " FROM " + self.TABLE_ACCNT_INFO
+                      + " WHERE " + self.KEY1_USERNAME + "=?")
+        
+        scrape_time = cur.execute(select_str, (username,)).fetchone()[0]
+        cur.close()
+        return scrape_time
     
     def print_all_users(self):
         cur = self.conn.cursor()
-        select_str = "SELECT " + self.KEY1_USERNAME + " FROM " + self.TABLE_ACCNT_INFO
+        select_str = "SELECT * FROM " + self.TABLE_ACCNT_HISTORY
         
         for row in cur.execute(select_str):
             print(row)
-        
         cur.close()

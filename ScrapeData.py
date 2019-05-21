@@ -10,12 +10,14 @@ def get_data(comment, sub, ps, r):
     user_in_db = sub.db.exists_in_db(username)
     if not user_in_db:
         print("Getting all data for " + username + "...")
-        return get_all_data(comment, sub, ps)
+        load_data(False, comment, sub, ps)
     else:
-        print("Skipped user: " + username)
+        print("Updating data for: " + username + "...")
+        load_data(True, comment, sub, ps)
 
 
-def get_all_data(comment, sub, ps):
+def load_data(update, comment, sub, ps):
+    # Account Info Table
     author = comment.author
     username = str(author)
     created = author.created_utc
@@ -26,13 +28,22 @@ def get_all_data(comment, sub, ps):
     
     # Temp values
     ratelimit_count = 0
-    ratelimit_start = time.time()
+    ratelimit_start = int(time.time())
     
-    # Update accnt_info table
-    sub.db.insert_info(username, created, ratelimit_start, ratelimit_count, total_post_karma,
-                       total_comment_karma, flair_txt, last_scraped)
+    if update:
+        before_time = sub.db.get_last_scraped(username)
+        sub.db.update_info(username, ratelimit_start, ratelimit_count, total_post_karma,
+                           total_comment_karma, flair_txt, last_scraped)
+    else:
+        before_time = int(datetime(2000, 1, 1).timestamp())
+        # Insert data into accnt_info table
+        sub.db.insert_info(username, created, ratelimit_start, ratelimit_count, total_post_karma,
+                           total_comment_karma, flair_txt, last_scraped)
     
+    # Account Activity Table
+    # Comments
     comment_results = ps.search_comments(author=author,
+                                         before=before_time,
                                          filter=["id", "score", "subreddit", "body"],
                                          limit=1000)
     
@@ -101,7 +112,9 @@ def get_all_data(comment, sub, ps):
             if neg_qc_words or neg_qc_score:
                 sub_neg_qc[subreddit] += 1
     
+    # Posts
     post_results = ps.search_submissions(author=author,
+                                         before=before_time,
                                          filter=["id", "score", "subreddit"],
                                          limit=1000)
     sub_post_karma = Counter()
@@ -122,6 +135,13 @@ def get_all_data(comment, sub, ps):
             sub_pos_posts[subreddit] += 1
         else:
             sub_neg_posts[subreddit] += 1
+            
+    if update:
+        sub.db.update_activity(username, sub_comment_karma, sub_pos_comments, sub_neg_comments,
+                               sub_pos_qc, sub_neg_qc, sub_post_karma, sub_pos_posts, sub_neg_posts)
+    else:
+        sub.db.insert_activity(username, sub_comment_karma, sub_pos_comments, sub_neg_comments,
+                               sub_pos_qc, sub_neg_qc, sub_post_karma, sub_pos_posts, sub_neg_posts)
 
 
 def count_words(body):
