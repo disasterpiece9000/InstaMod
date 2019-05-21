@@ -12,10 +12,10 @@ class Database:
     KEY1_FLAIR_TEXT = "flair_text"
     KEY1_LAST_SCRAPED = "last_scraped"
     CREATE_ACCNT_INFO = ("CREATE TABLE IF NOT EXISTS " + TABLE_ACCNT_INFO + " (" +
-                         KEY1_USERNAME + " TEXT, " + KEY1_DATE_CREATED + " TEXT, " +
-                         KEY1_RATELIMIT_START + " TEXT, " + KEY1_RATELIMIT_COUNT + " INTEGER, " +
+                         KEY1_USERNAME + " TEXT PRIMARY KEY, " + KEY1_DATE_CREATED + " INTEGER, " +
+                         KEY1_RATELIMIT_START + " INTEGER, " + KEY1_RATELIMIT_COUNT + " INTEGER, " +
                          KEY1_POST_KARMA + " INTEGER, " + KEY1_COMMENT_KARMA + " INTEGER, " +
-                         KEY1_FLAIR_TEXT + " TEXT, " + KEY1_LAST_SCRAPED + " TEXT" +
+                         KEY1_FLAIR_TEXT + " TEXT, " + KEY1_LAST_SCRAPED + " INTEGER" +
                          ")")
     
     TABLE_ACCNT_HISTORY = "accnt_history"
@@ -46,8 +46,50 @@ class Database:
     
     def exists_in_db(self, username):
         cur = self.conn.cursor()
-        select_str = ("SELECT EXISTS (SELECT 1 FROM " + self.TABLE_ACCNT_INFO +
-                      " WHERE " + self.KEY1_USERNAME + "=?)")
-        exists = cur.execute(select_str, (username,))
+        select_str = ("SELECT " + self.KEY1_USERNAME + " FROM " + self.TABLE_ACCNT_INFO
+                      + " WHERE " + self.KEY1_USERNAME + " = ?")
         
-        return exists == 1
+        exists = False
+        for row in cur.execute(select_str, (username,)):
+            exists = True
+            break
+            
+        cur.close()
+        return exists
+    
+    def insert_info(self, username, created, ratelimit_start, ratelimit_count, total_post_karma,
+                    total_comment_karma, flair_txt, last_scraped):
+    
+        print("\nInserted user into accnt_info: " + username)
+        print("Created: " + str(created))
+        print("Ratelimit Start: " + str(ratelimit_start))
+        print("Ratelimit Count: " + str(ratelimit_count))
+        print("Total Post Karma: " + str(total_post_karma))
+        print("Total Comment Karma: " + str(total_comment_karma))
+        if flair_txt is not None:
+            print("Flair Text: " + flair_txt)
+        else:
+            print("Flair Text: n/a")
+        print("Last Scraped: " + str(last_scraped) + "\n")
+        
+        cur = self.conn.cursor()
+        insert_str = ("INSERT INTO " + self.TABLE_ACCNT_INFO + "(" + self.KEY1_USERNAME + ", "
+                      + self.KEY1_DATE_CREATED + ", " + self.KEY1_RATELIMIT_START + ", "
+                      + self.KEY1_RATELIMIT_COUNT + ", " + self.KEY1_POST_KARMA + ", "
+                      + self.KEY1_COMMENT_KARMA + ", " + self.KEY1_FLAIR_TEXT + ", "
+                      + self.KEY1_LAST_SCRAPED + ") "
+                      + "VALUES(?,?,?,?,?,?,?,?)")
+        
+        cur.execute(insert_str, (username, created, ratelimit_start, ratelimit_count, total_post_karma,
+                    total_comment_karma, flair_txt, last_scraped))
+        self.conn.commit()
+        cur.close()
+    
+    def print_all_users(self):
+        cur = self.conn.cursor()
+        select_str = "SELECT " + self.KEY1_USERNAME + " FROM " + self.TABLE_ACCNT_INFO
+        
+        for row in cur.execute(select_str):
+            print(row)
+        
+        cur.close()

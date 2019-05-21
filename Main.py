@@ -1,5 +1,4 @@
 import praw
-from psaw import PushshiftAPI
 from queue import Queue
 import threading
 from Subreddit import Subreddit
@@ -22,7 +21,6 @@ sub_str = ""
 for sub in sub_list:
     sub_str += sub.sub_name + "+"
 sub_str = sub_str[:-1]
-print(sub_str)
 all_subs = r.subreddit(sub_str)
 
 # Main Method
@@ -30,8 +28,7 @@ process_thread.setDaemon(True)
 process_thread.start()
 
 while True:
-    for comment in all_subs.stream.comments(pause_after=1, skip_existing=True):
+    for comment in all_subs.stream.comments(pause_after=1, skip_existing=False):
         if comment is None:
             continue
         comment_queue.put(comment)
-

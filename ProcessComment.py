@@ -1,5 +1,6 @@
 import ScrapeData
 from psaw import PushshiftAPI
+import prawcore
 
 
 def fetch_queue(r, q, lock, sub_list):
@@ -21,4 +22,7 @@ def fetch_queue(r, q, lock, sub_list):
                 target_sub = sub
                 break
         if target_sub is not None:
-            ScrapeData.get_data(comment, target_sub, ps)
+            try:
+                ScrapeData.get_data(comment, target_sub, ps, r)
+            except (prawcore.NotFound, prawcore.RequestException):
+                continue
