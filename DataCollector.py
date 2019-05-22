@@ -1,22 +1,31 @@
 from collections import Counter
 from datetime import datetime
 import time
+from psaw import PushshiftAPI
+
+# PushShift Instance
+ps = PushshiftAPI()
 
 
-def get_data(comment, sub, ps, r):
+def get_data(comment, sub):
     user = comment.author
     username = str(user)
+    update_flair = False
     
     user_in_db = sub.db.exists_in_db(username)
     if not user_in_db:
         print("Getting all data for " + username + "...")
-        load_data(False, comment, sub, ps)
-    else:
-        print("Updating data for: " + username + "...")
-        load_data(True, comment, sub, ps)
+        load_data(False, comment, sub)
+        update_flair = True
+    elif is_expired(comment, sub):
+        print("Updating data for " + username + "...")
+        load_data(True, comment, sub)
+        update_flair = True
+    
+    return update_flair
 
 
-def load_data(update, comment, sub, ps):
+def load_data(update, comment, sub):
     # Account Info Table
     author = comment.author
     username = str(author)
@@ -31,11 +40,11 @@ def load_data(update, comment, sub, ps):
     ratelimit_start = int(time.time())
     
     if update:
-        before_time = sub.db.get_last_scraped(username)
+        after_time = sub.db.get_last_scraped(username)
         sub.db.update_info(username, ratelimit_start, ratelimit_count, total_post_karma,
                            total_comment_karma, flair_txt, last_scraped)
     else:
-        before_time = int(datetime(2000, 1, 1).timestamp())
+        after_time = int(datetime(2000, 1, 1).timestamp())
         # Insert data into accnt_info table
         sub.db.insert_info(username, created, ratelimit_start, ratelimit_count, total_post_karma,
                            total_comment_karma, flair_txt, last_scraped)
@@ -43,7 +52,7 @@ def load_data(update, comment, sub, ps):
     # Account Activity Table
     # Comments
     comment_results = ps.search_comments(author=author,
-                                         before=before_time,
+                                         after=after_time,
                                          filter=["id", "score", "subreddit", "body"],
                                          limit=1000)
     
@@ -57,7 +66,8 @@ def load_data(update, comment, sub, ps):
         try:
             data = comment[6]
         except IndexError:
-            print(data)
+            print(comment)
+            return
             
         score = data["score"]
         subreddit = data["subreddit"].lower()
@@ -71,7 +81,8 @@ def load_data(update, comment, sub, ps):
         
         # Quality Comments
         # Positive QC
-        # Posivite QC: Score
+        
+        # Positive QC: Score
         if sub.qc_config["positive score"] != "None":
             pos_qc_score = score >= int(sub.qc_config["positive score"])
         else:
@@ -114,7 +125,7 @@ def load_data(update, comment, sub, ps):
     
     # Posts
     post_results = ps.search_submissions(author=author,
-                                         before=before_time,
+                                         after=after_time,
                                          filter=["id", "score", "subreddit"],
                                          limit=1000)
     sub_post_karma = Counter()
@@ -125,7 +136,8 @@ def load_data(update, comment, sub, ps):
         try:
             data = post[5]
         except IndexError:
-            print(data)
+            print(post)
+            return
             
         score = data["score"]
         subreddit = data["subreddit"].lower()
@@ -147,3 +159,20 @@ def load_data(update, comment, sub, ps):
 def count_words(body):
     body_list = body.split()
     return len(body_list)
+
+
+def is_expired(comment, target_sub):
+    last_seen = target_sub.db.get_last_scraped(str(comment.author))
+    current_time = int(time.time())
+    day_diff = int((current_time - last_seen) / 86400)
+    
+    print("\nExpired Info:")
+    print(str(last_seen))
+    print(str(current_time))
+    print(str(day_diff) + "\n")
+    print(target_sub.flair_config["flair expiration"])
+    
+    if day_diff >= int(target_sub.flair_config["flair expiration"]):
+        return True
+    else:
+        return False

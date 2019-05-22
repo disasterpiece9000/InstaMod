@@ -38,7 +38,7 @@ class Database:
                             ")")
     
     def __init__(self, sub_name):
-        self.conn = sqlite3.connect(sub_name + "/master_databank.db")
+        self.conn = sqlite3.connect(sub_name + "/master_databank.db", isolation_level=None)
         cur = self.conn.cursor()
         cur.execute(self.CREATE_ACCNT_INFO)
         cur.execute(self.CREATE_ACCNT_HISTORY)
@@ -76,7 +76,6 @@ class Database:
         
         cur.execute(insert_str, (username, created, ratelimit_start, ratelimit_count, total_post_karma,
                     total_comment_karma, flair_txt, last_scraped))
-        self.conn.commit()
         cur.close()
         print("Done inserting into accnt_info\n")
         
@@ -92,7 +91,6 @@ class Database:
         
         cur.execute(update_str, (ratelimit_start, ratelimit_count, total_post_karma,
                                  total_comment_karma, flair_txt, last_scraped, username))
-        self.conn.commit()
         cur.close()
         print("Done updating accnt_info\n")
         
@@ -115,7 +113,7 @@ class Database:
                                      sub_pos_comments[sub], sub_neg_comments[sub],
                                      sub_pos_qc[sub], sub_neg_qc[sub],
                                      sub_post_karma[sub], sub_comment_karma[sub]))
-            self.conn.commit()
+
         cur.close()
         print("Done inserting into accnt_activity\n")
         
@@ -140,7 +138,7 @@ class Database:
             cur.execute(update_str, (sub_comment_karma[sub], sub_pos_comments[sub], sub_neg_comments[sub],
                                      sub_pos_qc[sub], sub_neg_qc[sub], sub_post_karma[sub],
                                      sub_pos_posts[sub], sub_neg_posts[sub], username))
-            self.conn.commit()
+
         cur.close()
         print("Done updating accnt_activity\n")
         
@@ -153,10 +151,48 @@ class Database:
         cur.close()
         return scrape_time
     
-    def print_all_users(self):
+    def get_total_comment_karma(self, username):
         cur = self.conn.cursor()
-        select_str = "SELECT * FROM " + self.TABLE_ACCNT_HISTORY
+        select_str = ("SELECT " + self.KEY1_COMMENT_KARMA + " FROM " + self.TABLE_ACCNT_INFO
+                      + " WHERE " + self.KEY1_USERNAME + " = ?")
         
-        for row in cur.execute(select_str):
+        cur.execute(select_str, (username,))
+        value = cur.fetchone()[0]
+        cur.close()
+        return value
+
+    def get_total_post_karma(self, username):
+        cur = self.conn.cursor()
+        select_str = ("SELECT " + self.KEY1_POST_KARMA + " FROM " + self.TABLE_ACCNT_INFO
+                      + " WHERE " + self.KEY1_USERNAME + " = ?")
+    
+        cur.execute(select_str, (username,))
+        value = cur.fetchone()[0]
+        cur.close()
+        return value
+    
+    def get_comment_karma(self, username, sub_list):
+        cur = self.conn.cursor()
+        select_str = ("SELECT " + self.KEY2_COMMENT_KARMA + " FROM " + self.TABLE_ACCNT_HISTORY
+                      + " WHERE " + self.KEY2_USERNAME + " = ? AND "
+                      + self.KEY2_SUB_NAME + " = ?")
+        
+        value = 0
+        for sub in sub_list:
+            sub = sub.lower()
+            cur.execute(select_str, (username, sub))
+            data = cur.fetchone()
+            if data is not None:
+                value += data[0]
+        print(str(value))
+        return value
+    
+    def print_all_users(self, username, subname):
+        cur = self.conn.cursor()
+        select_str = ("SELECT " + self.KEY2_COMMENT_KARMA + " FROM " + self.TABLE_ACCNT_HISTORY
+                      + " WHERE " + self.KEY2_USERNAME + " = ? AND "
+                      + self.KEY2_SUB_NAME + " = ?")
+        
+        for row in cur.execute(select_str, (username, subname)):
             print(row)
         cur.close()
