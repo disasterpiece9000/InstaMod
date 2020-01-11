@@ -1,5 +1,6 @@
 # InstaMod
-## An Automoderator-like bot which allows moderators to create custom actions based on a user's account activity
+
+## **Note**: InstaMod 2.0 is the successor to this project and can be found [here](https://github.com/disasterpiece9000/InstaMod-2.0)
 
 ### InstaMod is capable of automatically assigning users' flair, advanced thread locking, subreddit-wide filtering, creating a subreddit progression system, and more. 
 
